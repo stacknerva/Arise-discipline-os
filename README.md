@@ -1,84 +1,21 @@
-# ARISE
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-A minimalist discipline operating system designed to reduce decisions and maximize execution.
+# Run and deploy your AI Studio app
 
----
+This contains everything you need to run your app locally.
 
-## Philosophy
+View your app in AI Studio: https://ai.studio/apps/5aee8ced-a203-4f30-9df7-b82f1146aaf1
 
-ARISE is not a productivity app.
+## Run Locally
 
-It is not a habit tracker.
+**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
 
-It is not a journal.
 
-ARISE is a personal operating system built around one idea:
-
-> Reduce decisions. Increase execution.
-
-Every feature exists to help you execute today's routine without distraction.
-
----
-
-## Features
-
-- Minimal black-and-white interface
-- Pixel-inspired design
-- Daily routine management
-- Daily discipline report
-- Monthly and historical calendar
-- Daily philosophy quotes
-- Internet-based quote synchronization
-- Offline support
-- Skip Today mode
-- Local data storage
-
----
-
-## Technology
-
-- Kotlin
-- Jetpack Compose
-- Material 3
-- Room Database
-- GitHub Actions
-- Gradle (Kotlin DSL)
-
----
-
-## Installation
-
-Download the latest APK from the **Releases** page.
-
----
-
-## Building
-
-Clone the repository and open it with Android Studio.
-
-Build the project using Gradle.
-
----
-
-## Roadmap
-
-- [x] Daily Routine
-- [x] Daily Report
-- [x] Calendar History
-- [x] Quote Engine
-- [x] Offline Storage
-- [x] Skip Today
-
----
-
-## License
-
-This project is licensed under the MIT License.
-
----
-
-## Author
-
-Developed by **Gulshan Attri**.
-
-GitHub: https://github.com/stacknerva
+1. Open Android Studio
+2. Select **Open** and choose the directory containing this project
+3. Allow Android Studio to fix any incompatibilities as it imports the project.
+4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
+5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
+6. Run the app on an emulator or physical device
