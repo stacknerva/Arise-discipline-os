@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +21,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import com.example.utils.formatTimeAmPm
 
 @Composable
 fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
@@ -40,27 +40,35 @@ fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
                 .fillMaxSize()
                 .padding(24.dp)
         ) {
-            Text(
-                text = "CURRENT STREAK\n$currentStreak DAYS",
-                style = MaterialTheme.typography.labelLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
-            )
-
-            val displayDate = SimpleDateFormat("EEEE\nMMMM d, yyyy", Locale.getDefault()).format(Date())
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Text(
+                    text = "CURRENT STREAK",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "$currentStreak DAYS",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            
+            val displayDate = SimpleDateFormat("EEEE\nMMMM d, yyyy", Locale.getDefault()).format(currentCal.time)
             Text(
                 text = displayDate.uppercase(),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
-
+            
             val currentQuote = quote
             if (currentQuote != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 32.dp)
+                        .padding(bottom = 16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -90,7 +98,7 @@ fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
                     color = MaterialTheme.colorScheme.surface,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 32.dp)
+                        .padding(bottom = 16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -101,15 +109,14 @@ fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
                     }
                 }
             }
-
+            
             Text(
                 text = "ROUTINE",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 8.dp)
             )
-
+            
             val currentMinutes = currentCal.get(Calendar.HOUR_OF_DAY) * 60 + currentCal.get(Calendar.MINUTE)
-
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -117,8 +124,24 @@ fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
                     val startMins = task.startTimeStr.split(":").let { (it[0].toInt() * 60) + it[1].toInt() }
                     val endMins = task.endTimeStr.split(":").let { (it[0].toInt() * 60) + it[1].toInt() }
                     
-                    val isPast = currentMinutes >= endMins
-                    val isCurrent = currentMinutes in startMins until endMins
+                    val isOvernight = endMins < startMins
+                    
+                    val isPast = if (isOvernight) {
+                        if (currentMinutes >= startMins) false
+                        else if (currentMinutes < endMins) false
+                        else {
+                            val midpoint = endMins + (startMins - endMins) / 2
+                            currentMinutes < midpoint
+                        }
+                    } else {
+                        currentMinutes >= endMins
+                    }
+                    
+                    val isCurrent = if (isOvernight) {
+                        currentMinutes >= startMins || currentMinutes < endMins
+                    } else {
+                        currentMinutes in startMins until endMins
+                    }
                     
                     TaskTimelineItem(task = task, isPast = isPast, isCurrent = isCurrent, isLast = index == tasks.lastIndex)
                 }
@@ -163,7 +186,6 @@ fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
 fun TaskTimelineItem(task: DailyTaskEntity, isPast: Boolean, isCurrent: Boolean, isLast: Boolean) {
     val alpha = if (isPast) 0.4f else 1f
     val lineColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-
     Row(
         verticalAlignment = Alignment.Top,
         modifier = Modifier
@@ -196,8 +218,10 @@ fun TaskTimelineItem(task: DailyTaskEntity, isPast: Boolean, isCurrent: Boolean,
         Spacer(modifier = Modifier.width(8.dp))
         
         Column(modifier = Modifier.padding(top = 2.dp)) {
+            val startAmPm = formatTimeAmPm(task.startTimeStr)
+            val endAmPm = formatTimeAmPm(task.endTimeStr)
             Text(
-                text = "${task.startTimeStr} - ${task.endTimeStr}", 
+                text = "$startAmPm - $endAmPm", 
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

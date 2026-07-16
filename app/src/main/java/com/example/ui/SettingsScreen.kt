@@ -12,12 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.RoutineTemplateEntity
+import com.example.utils.formatTimeAmPm
+import com.example.utils.parseTo24Hour
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SettingsScreen(viewModel: DisciplineViewModel) {
     val templates by viewModel.allTemplates.collectAsStateWithLifecycle()
-
     var showAddRoutine by remember { mutableStateOf<RoutineTemplateEntity?>(null) }
     var isAddingRoutine by remember { mutableStateOf(false) }
     var showSkipDialog by remember { mutableStateOf(false) }
@@ -32,7 +33,6 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
         item {
             Text("SETTINGS", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 32.dp))
         }
-
         item {
             SectionHeader("ROUTINE", onAddClick = { isAddingRoutine = true })
         }
@@ -48,12 +48,13 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
                     .padding(vertical = 8.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("${t.startTimeStr} - ${t.endTimeStr}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val startAmPm = formatTimeAmPm(t.startTimeStr)
+                    val endAmPm = formatTimeAmPm(t.endTimeStr)
+                    Text("$startAmPm - $endAmPm", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(t.title, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
-
         item {
             Spacer(modifier = Modifier.height(48.dp))
             Text("MANAGEMENT", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
@@ -151,11 +152,13 @@ private fun SectionHeader(title: String, onAddClick: () -> Unit) {
     }
 }
 
+
+
 @Composable
 fun AddRoutineDialog(template: RoutineTemplateEntity?, onDismiss: () -> Unit, onSave: (String, String, String, Int, Int) -> Unit) {
     var title by remember { mutableStateOf(template?.title ?: "") }
-    var start by remember { mutableStateOf(template?.startTimeStr ?: "") }
-    var end by remember { mutableStateOf(template?.endTimeStr ?: "") }
+    var start by remember { mutableStateOf(if (template != null) formatTimeAmPm(template.startTimeStr) else "") }
+    var end by remember { mutableStateOf(if (template != null) formatTimeAmPm(template.endTimeStr) else "") }
     var offsetStr by remember { mutableStateOf(template?.notificationOffsetMins?.toString() ?: "5") }
     var orderStr by remember { mutableStateOf(template?.orderIndex?.toString() ?: "0") }
     
@@ -165,8 +168,8 @@ fun AddRoutineDialog(template: RoutineTemplateEntity?, onDismiss: () -> Unit, on
         text = {
             Column {
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") })
-                OutlinedTextField(value = start, onValueChange = { start = it }, label = { Text("Start Time (HH:mm)") })
-                OutlinedTextField(value = end, onValueChange = { end = it }, label = { Text("End Time (HH:mm)") })
+                OutlinedTextField(value = start, onValueChange = { start = it }, label = { Text("Start Time (e.g. 2:00 PM)") })
+                OutlinedTextField(value = end, onValueChange = { end = it }, label = { Text("End Time (e.g. 4:30 PM)") })
                 OutlinedTextField(value = offsetStr, onValueChange = { offsetStr = it }, label = { Text("Notification Offset (mins)") })
                 OutlinedTextField(value = orderStr, onValueChange = { orderStr = it }, label = { Text("Order Index") })
             }
@@ -174,7 +177,7 @@ fun AddRoutineDialog(template: RoutineTemplateEntity?, onDismiss: () -> Unit, on
         confirmButton = { TextButton(onClick = { 
             val offset = offsetStr.toIntOrNull() ?: 5
             val order = orderStr.toIntOrNull() ?: 0
-            onSave(title, start, end, offset, order) 
+            onSave(title, parseTo24Hour(start), parseTo24Hour(end), offset, order) 
         }) { Text("SAVE") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } }
     )

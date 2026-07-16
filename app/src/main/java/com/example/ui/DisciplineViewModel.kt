@@ -58,26 +58,45 @@ class DisciplineViewModel(
 
     private var timeOffsetMs: Long? = null
 
-    init {
+    fun syncTimeNow() {
         viewModelScope.launch {
-            // Initial sync
             try {
-                Log.d("AriseApp", "Attempting initial internet time sync...")
+                Log.d("AriseApp", "Attempting internet time sync on resume...")
                 val timeResponse = timeApiService.getCurrentTime()
                 val internetTimeMs = timeResponse.unixtime * 1000L
                 timeOffsetMs = internetTimeMs - System.currentTimeMillis()
                 Log.d("AriseApp", "Time offset calculated: $timeOffsetMs ms")
             } catch (e: Exception) {
-                Log.e("AriseApp", "Initial time sync failed", e)
+                Log.e("AriseApp", "Time sync failed, using device time", e)
+                timeOffsetMs = 0L
             }
+        }
+    }
 
+    init {
+        viewModelScope.launch {
+            while (true) {
+                try {
+                    Log.d("AriseApp", "Attempting internet time sync...")
+                    val timeResponse = timeApiService.getCurrentTime()
+                    val internetTimeMs = timeResponse.unixtime * 1000L
+                    timeOffsetMs = internetTimeMs - System.currentTimeMillis()
+                    Log.d("AriseApp", "Time offset calculated: $timeOffsetMs ms")
+                } catch (e: Exception) {
+                    Log.e("AriseApp", "Time sync failed, using device time", e)
+                    timeOffsetMs = 0L
+                }
+                delay(15 * 60 * 1000L) // every 15 minutes
+            }
+        }
+        
+        viewModelScope.launch {
             while (true) {
                 val realTimeMs = System.currentTimeMillis() + (timeOffsetMs ?: 0L)
                 val realCal = Calendar.getInstance().apply { timeInMillis = realTimeMs }
                 _currentTime.value = realCal
                 
                 val currentStr = getCurrentDateStr()
-
                 if (_currentDate.value != currentStr) {
                     _currentDate.value = currentStr
                     checkAndInitializeDay(currentStr)
@@ -311,6 +330,8 @@ class DisciplineViewModel(
         return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(realTimeMs))
     }
     
+    fun getTasksForDateFlow(date: String) = repository.getTasksForDate(date)
+
     fun setCurrentDate(date: String) {
         _currentDate.value = date
     }
