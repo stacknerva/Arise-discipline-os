@@ -12,10 +12,6 @@ A minimalist discipline operating system designed to reduce decisions and maximi
 - Internet quote synchronization
 - Minimal black-and-white UI
 
-## Screenshots
-
-(Add screenshots here)
-
 ## Installation
 
 Download the latest APK from the Releases page.
