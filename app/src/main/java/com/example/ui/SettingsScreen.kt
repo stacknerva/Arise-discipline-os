@@ -41,6 +41,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import coil.compose.AsyncImage
 import com.example.R
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import androidx.credentials.CustomCredential
+import kotlinx.coroutines.launch
+import java.security.MessageDigest
+import java.util.UUID
+import androidx.compose.runtime.rememberCoroutineScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 
@@ -78,43 +87,54 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestIdToken("583623407618-h14m9dv8p4sr20dctugmjn2mijfor37i.apps.googleusercontent.com")
             .requestEmail()
             .requestProfile()
             .build()
     }
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
     
-    val googleSignInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        android.util.Log.d("GoogleSignIn", "Activity result received: ${result.resultCode}")
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(ApiException::class.java)
-            android.util.Log.d("GoogleSignIn", "Google account obtained: ${account.email}, ID token null? ${account.idToken == null}")
-            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-            android.util.Log.d("GoogleSignIn", "Firebase credential created")
-            FirebaseAuth.getInstance().signInWithCredential(credential).addOnCompleteListener { authTask ->
-                if (authTask.isSuccessful) {
-                    android.util.Log.d("GoogleSignIn", "Authentication success")
-                    googleAccount = account
-                    viewModel.handleSignIn(context)
+    val credentialManager = remember { CredentialManager.create(context) }
+    
+    val doGoogleSignIn = {
+        coroutineScope.launch {
+            try {
+                val hashedNonce = UUID.randomUUID().toString()
+                val googleIdOption = GetGoogleIdOption.Builder()
+                    .setFilterByAuthorizedAccounts(false)
+                    .setServerClientId("583623407618-h14m9dv8p4sr20dctugmjn2mijfor37i.apps.googleusercontent.com")
+                    .setNonce(hashedNonce)
+                    .build()
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                val result = credentialManager.getCredential(
+                    request = request,
+                    context = context,
+                )
+                
+                val credential = result.credential
+                if (credential is androidx.credentials.CustomCredential && credential.type == com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    val googleIdTokenCredential = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data)
+                    val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
+                    FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).addOnCompleteListener { authTask ->
+                        if (authTask.isSuccessful) {
+                            googleAccount = GoogleSignIn.getLastSignedInAccount(context)
+                            viewModel.handleSignIn(context)
+                        } else {
+                            signInError = "Firebase auth failed: ${authTask.exception?.message}"
+                        }
+                    }
                 } else {
-                    val msg = "Firebase auth failed: ${authTask.exception?.message}"
-                    android.util.Log.e("GoogleSignIn", msg, authTask.exception)
-                    signInError = msg
+                    signInError = "Unexpected credential type"
                 }
+            } catch (e: GetCredentialException) {
+                signInError = "GetCredentialException: ${e.errorMessage}"
+            } catch (e: Exception) {
+                signInError = "Exception: ${e.message}"
             }
-        } catch (e: ApiException) {
-            val msg = "Sign in failed: code ${e.statusCode}" + 
-                if (e.statusCode == 10) " (DEVELOPER_ERROR: check SHA1/Web Client ID/Support Email)" 
-                else if (e.statusCode == 12500) " (SIGN_IN_FAILED: check support email in Firebase console)" 
-                else ", message: ${e.message}"
-            android.util.Log.e("GoogleSignIn", msg, e)
-            signInError = msg
-        } catch (e: Exception) {
-            val msg = "Sign in unexpected error: ${e.message}"
-            android.util.Log.e("GoogleSignIn", msg, e)
-            signInError = msg
         }
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -154,7 +174,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
             Text("ACCOUNT", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
             AccountSection(
                 account = googleAccount,
-                onSignIn = { googleSignInLauncher.launch(googleSignInClient.signInIntent) },
+                onSignIn = { doGoogleSignIn() },
                 onSignOut = { 
                     googleSignInClient.signOut().addOnCompleteListener {
                         FirebaseAuth.getInstance().signOut()
