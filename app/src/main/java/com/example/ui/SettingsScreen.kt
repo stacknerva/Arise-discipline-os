@@ -87,7 +87,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("583623407618-h14m9dv8p4sr20dctugmjn2mijfor37i.apps.googleusercontent.com")
+            .requestIdToken(context.getString(R.string.default_web_client_id))
             .requestEmail()
             .requestProfile()
             .build()
@@ -102,7 +102,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
                 val hashedNonce = UUID.randomUUID().toString()
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId("583623407618-h14m9dv8p4sr20dctugmjn2mijfor37i.apps.googleusercontent.com")
+                    .setServerClientId(context.getString(R.string.default_web_client_id))
                     .setNonce(hashedNonce)
                     .build()
 
@@ -131,7 +131,11 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
                     signInError = "Unexpected credential type"
                 }
             } catch (e: GetCredentialException) {
-                signInError = "GetCredentialException: ${e.errorMessage}"
+                if (e.type.contains("TYPE_NO_CREDENTIAL", ignoreCase = true) || e.errorMessage?.toString()?.contains("no credentials", ignoreCase = true) == true) {
+                    signInError = "No Google account found on this device. Please add a Google account in the device Settings and try again."
+                } else {
+                    signInError = "GetCredentialException: ${e.type} - ${e.errorMessage}"
+                }
             } catch (e: Exception) {
                 signInError = "Exception: ${e.message}"
             }
