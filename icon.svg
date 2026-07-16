@@ -1,0 +1,30 @@
+<svg width="192" height="192" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="108" height="108" fill="#000000" />
+    
+    <!-- Dashed Line -->
+    <line x1="54" y1="8" x2="54" y2="16" stroke="#FFFFFF" stroke-width="2" stroke-linecap="square" />
+    <line x1="54" y1="20" x2="54" y2="28" stroke="#FFFFFF" stroke-width="2" stroke-linecap="square" />
+    <line x1="54" y1="80" x2="54" y2="88" stroke="#FFFFFF" stroke-width="2" stroke-linecap="square" />
+    <line x1="54" y1="92" x2="54" y2="100" stroke="#FFFFFF" stroke-width="2" stroke-linecap="square" />
+
+    <!-- Circle -->
+    <circle cx="54" cy="54" r="30" stroke="#FFFFFF" stroke-width="2" fill="none" />
+        
+    <!-- Hourglass caps -->
+    <line x1="40" y1="36" x2="68" y2="36" stroke="#FFFFFF" stroke-width="3" />
+    <line x1="40" y1="72" x2="68" y2="72" stroke="#FFFFFF" stroke-width="3" />
+
+    <!-- Hourglass outline -->
+    <polygon points="42,36 66,36 54,54" stroke="#FFFFFF" stroke-width="2" fill="none" />
+    <polygon points="42,72 66,72 54,54" stroke="#FFFFFF" stroke-width="2" fill="none" />
+
+    <!-- Sand Top -->
+    <polygon points="48.6,46 59.4,46 54,54" fill="#FFFFFF" />
+
+    <!-- Sand Bottom -->
+    <polygon points="46,66 62,66 54,72" fill="#FFFFFF" />
+
+    <!-- Falling sand line -->
+    <line x1="54" y1="54" x2="54" y2="66" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" />
+</svg>

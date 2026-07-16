@@ -1,0 +1,6 @@
+{
+  "name": "ARISE",
+  "description": "A minimal, clean, offline-first daily discipline tracking app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
