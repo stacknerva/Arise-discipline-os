@@ -115,9 +115,37 @@ class DisciplineViewModel(
             val response = apiService.getQuotes()
             val quotes = response.quotes
             Log.d("AriseApp", "Successfully parsed ${quotes.size} quotes from JSON backend.")
-            
-            if (quotes.isNotEmpty()) {
-                val shuffled = quotes.shuffled()
+
+            val approvedSources = setOf(
+                "Marcus Aurelius", "Seneca", "Epictetus", "Aristotle", "Socrates",
+                "Friedrich Nietzsche", "Arthur Schopenhauer", "Confucius", "Chanakya",
+                "Baltasar Gracián", "Niccolò Machiavelli", "Viktor Frankl", "Carl Jung",
+                "Sun Tzu", "Miyamoto Musashi", "Dwight D. Eisenhower", "Theodore Roosevelt",
+                "George S. Patton", "James Mattis", "Admiral James Stockdale",
+                "Richard Feynman", "Benjamin Franklin", "James Clear", "Cal Newport",
+                "Naval Ravikant", "Bruce Lee", "Julius Caesar", "Alexander the Great",
+                "Guts", "Guts (Berserk)", "Askeladd", "Thorfinn", "Fang Yuan", 
+                "Bruce Wayne", "Batman", "Alfred Pennyworth", "Sherlock Holmes", 
+                "Tony Stark", "Uncle Iroh", "Johan Liebert", "Thomas Shelby"
+            )
+
+            val rejectedCategories = setOf(
+                "motivation", "generic", "social media", "wealth", "entrepreneurship",
+                "romance", "romantic", "spiritual", "science", "trivia"
+            )
+
+            val filteredQuotes = quotes.filter { q ->
+                val isApprovedSource = approvedSources.any { 
+                    it.equals(q.author, ignoreCase = true) || 
+                    it.equals(q.source, ignoreCase = true) || 
+                    q.author.contains(it, ignoreCase = true) 
+                }
+                val isRejectedCategory = rejectedCategories.any { q.category.contains(it, ignoreCase = true) }
+                isApprovedSource && !isRejectedCategory
+            }
+
+            if (filteredQuotes.isNotEmpty()) {
+                val shuffled = filteredQuotes.shuffled()
                 var newQuote: QuoteDto? = null
                 for (q in shuffled) {
                     val uniqueId = "${q.author}_${q.quote.hashCode()}"
@@ -125,6 +153,10 @@ class DisciplineViewModel(
                         newQuote = q
                         break
                     }
+                }
+                
+                if (newQuote == null) {
+                    newQuote = shuffled.firstOrNull()
                 }
                 
                 if (newQuote != null) {
@@ -141,16 +173,14 @@ class DisciplineViewModel(
                     repository.insertQuote(entity)
                     settingsRepository.setCurrentQuoteId(uniqueId)
                     settingsRepository.setCurrentQuoteDate(dateStr)
-                } else {
-                    Log.d("AriseApp", "All quotes downloaded. Picking random from local database.")
-                    val randomDbQuote = repository.getRandomQuote()
-                    if (randomDbQuote != null) {
-                        settingsRepository.setCurrentQuoteId(randomDbQuote.uniqueId)
-                        settingsRepository.setCurrentQuoteDate(dateStr)
-                    }
                 }
             } else {
-                Log.d("AriseApp", "Backend returned empty quotes list.")
+                Log.d("AriseApp", "No approved quotes found. Picking random from local database.")
+                val randomDbQuote = repository.getRandomQuote()
+                if (randomDbQuote != null) {
+                    settingsRepository.setCurrentQuoteId(randomDbQuote.uniqueId)
+                    settingsRepository.setCurrentQuoteDate(dateStr)
+                }
             }
         } catch (e: Exception) {
             Log.e("AriseApp", "Failed to fetch quotes from backend. Previous quote remains active.", e)
