@@ -73,6 +73,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     var routineToDelete by remember { mutableStateOf<RoutineTemplateEntity?>(null) }
     var showImportDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    var signInError by remember { mutableStateOf<String?>(null) }
     var googleAccount by remember { mutableStateOf(GoogleSignIn.getLastSignedInAccount(context)) }
     
     val gso = remember {
@@ -85,22 +86,38 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
     
     val googleSignInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        android.util.Log.d("GoogleSignIn", "Activity result received: ${result.resultCode}")
         if (result.resultCode == Activity.RESULT_OK) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(ApiException::class.java)
+                android.util.Log.d("GoogleSignIn", "Google account obtained: ${account.email}, ID token null? ${account.idToken == null}")
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                android.util.Log.d("GoogleSignIn", "Firebase credential created")
                 FirebaseAuth.getInstance().signInWithCredential(credential).addOnCompleteListener { authTask ->
                     if (authTask.isSuccessful) {
+                        android.util.Log.d("GoogleSignIn", "Authentication success")
                         googleAccount = account
                         viewModel.handleSignIn(context)
                     } else {
-                        Toast.makeText(context, "Firebase auth failed: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
+                        val msg = "Firebase auth failed: ${authTask.exception?.message}"
+                        android.util.Log.e("GoogleSignIn", msg, authTask.exception)
+                        signInError = msg
                     }
                 }
             } catch (e: ApiException) {
-                Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_LONG).show()
+                val msg = "Sign in failed: code ${e.statusCode}, message: ${e.message}"
+                android.util.Log.e("GoogleSignIn", msg, e)
+                signInError = msg
+            } catch (e: Exception) {
+                val msg = "Sign in unexpected error: ${e.message}"
+                android.util.Log.e("GoogleSignIn", msg, e)
+                signInError = msg
             }
+        } else {
+            val msg = "Activity result NOT OK: ${result.resultCode}"
+            android.util.Log.d("GoogleSignIn", msg)
+            signInError = msg
         }
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -222,6 +239,17 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
             
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    if (signInError != null) {
+        AlertDialog(
+            onDismissRequest = { signInError = null },
+            title = { Text("Sign In Error") },
+            text = { Text(signInError ?: "") },
+            confirmButton = {
+                TextButton(onClick = { signInError = null }) { Text("OK") }
+            }
+        )
     }
 
     if (isAddingRoutine) {
