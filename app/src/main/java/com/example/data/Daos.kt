@@ -20,6 +20,12 @@ interface RoutineDao {
 
     @Query("DELETE FROM routine_templates WHERE id = :id")
     suspend fun deleteTemplateById(id: Int)
+
+    @Query("SELECT * FROM routine_templates")
+    suspend fun getAllTemplatesSync(): List<RoutineTemplateEntity>
+
+    @Query("DELETE FROM routine_templates")
+    suspend fun deleteAllTemplates()
 }
 
 @Dao
@@ -35,6 +41,12 @@ interface DailyTaskDao {
     
     @Query("DELETE FROM daily_tasks WHERE date = :date")
     suspend fun deleteTasksForDate(date: String)
+
+    @Query("SELECT * FROM daily_tasks")
+    suspend fun getAllTasksSync(): List<DailyTaskEntity>
+
+    @Query("DELETE FROM daily_tasks")
+    suspend fun deleteAllTasks()
 }
 
 @Dao
@@ -65,4 +77,10 @@ interface DailyReportDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReport(report: DailyReportEntity)
+
+    @Query("SELECT * FROM daily_reports")
+    suspend fun getAllReportsSync(): List<DailyReportEntity>
+
+    @Query("DELETE FROM daily_reports")
+    suspend fun deleteAllReports()
 }

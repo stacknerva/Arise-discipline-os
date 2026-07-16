@@ -12,7 +12,7 @@ import androidx.core.app.NotificationCompat
 import java.util.Calendar
 
 class NotificationHelper(private val context: Context) {
-    private val channelId = "arise_routine_channel"
+    private val channelId = "arise_reminders_channel_v2"
     
     init {
         createNotificationChannel()
@@ -22,10 +22,17 @@ class NotificationHelper(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Routine Alarms",
+                "Arise Reminders",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifies you at the start of your routine tasks"
+                
+                val soundUri = android.net.Uri.parse("android.resource://${context.packageName}/raw/arise_notification_trimmed")
+                val audioAttributes = android.media.AudioAttributes.Builder()
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                    .build()
+                setSound(soundUri, audioAttributes)
             }
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -40,8 +47,41 @@ class NotificationHelper(private val context: Context) {
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setSound(android.net.Uri.parse("android.resource://${context.packageName}/raw/arise_notification_trimmed"))
         
         notificationManager.notify(notificationId, builder.build())
+    }
+
+    fun scheduleTestReminder() {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val calendar = Calendar.getInstance().apply {
+            add(Calendar.SECOND, 5)
+        }
+        
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            putExtra("IS_TEST", true)
+        }
+        
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            88888, // Unique ID for test
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            }
+        } catch (e: SecurityException) {
+            Log.e("NotificationHelper", "Permission to schedule test alarm denied", e)
+        }
     }
 
     fun scheduleAlarmsForTasks(tasks: List<DailyTaskEntity>, templates: List<RoutineTemplateEntity>) {

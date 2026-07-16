@@ -12,6 +12,12 @@ class AlarmReceiver : BroadcastReceiver() {
         val isReport = intent.getBooleanExtra("IS_REPORT", false)
         val helper = NotificationHelper(context)
         
+        val isTest = intent.getBooleanExtra("IS_TEST", false)
+        if (isTest) {
+            helper.showNotification("Test Reminder", "Your notifications are working perfectly! You're all set.", 88888)
+            return
+        }
+        
         if (isReport) {
             helper.showNotification("Daily Report", "Daily Report is now available.", 99999)
             return

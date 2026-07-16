@@ -1,0 +1,30 @@
+Reusing configuration cache.
+
+> Task :app:signingReport
+Variant: debug
+Config: debug
+Store: /root/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: 4B:1F:AD:87:86:CF:80:84:7C:64:6D:7B:4F:08:AB:65
+SHA1: CE:A4:CA:0A:5F:C9:BF:5C:1A:F1:E3:5D:60:4C:DC:34:46:45:40:7C
+SHA-256: EB:AF:C3:FF:EC:58:75:22:1B:6F:6C:4D:D7:CF:1E:24:F3:1D:C5:6A:F4:4C:B9:29:3F:F4:48:A2:14:7B:D0:08
+Valid until: Saturday, July 8, 2056
+----------
+Variant: release
+Config: release
+Store: /app/applet/my-upload-key.jks
+Alias: upload
+----------
+Variant: debugAndroidTest
+Config: debug
+Store: /root/.android/debug.keystore
+Alias: AndroidDebugKey
+MD5: 4B:1F:AD:87:86:CF:80:84:7C:64:6D:7B:4F:08:AB:65
+SHA1: CE:A4:CA:0A:5F:C9:BF:5C:1A:F1:E3:5D:60:4C:DC:34:46:45:40:7C
+SHA-256: EB:AF:C3:FF:EC:58:75:22:1B:6F:6C:4D:D7:CF:1E:24:F3:1D:C5:6A:F4:4C:B9:29:3F:F4:48:A2:14:7B:D0:08
+Valid until: Saturday, July 8, 2056
+----------
+
+BUILD SUCCESSFUL in 832ms
+1 actionable task: 1 executed
+Configuration cache entry reused.

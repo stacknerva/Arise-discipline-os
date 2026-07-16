@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.data.DisciplineRepository
 import com.example.data.NotificationHelper
 import com.example.data.SettingsRepository
+import com.example.data.CloudSyncManager
 
 import com.example.data.QuoteApiService
 import com.example.data.WorldTimeApiService
@@ -19,7 +20,7 @@ class DisciplineViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DisciplineViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return DisciplineViewModel(repository, settingsRepository, notificationHelper, apiService, timeApiService) as T
+            return DisciplineViewModel(repository, settingsRepository, CloudSyncManager(repository, settingsRepository), notificationHelper, apiService, timeApiService) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

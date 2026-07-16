@@ -2,8 +2,10 @@ package com.example.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.squareup.moshi.JsonClass
 
 @Entity(tableName = "routine_templates")
+@JsonClass(generateAdapter = true)
 data class RoutineTemplateEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
@@ -14,6 +16,7 @@ data class RoutineTemplateEntity(
 )
 
 @Entity(tableName = "daily_tasks")
+@JsonClass(generateAdapter = true)
 data class DailyTaskEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val date: String, // YYYY-MM-DD
@@ -26,6 +29,7 @@ data class DailyTaskEntity(
 )
 
 @Entity(tableName = "quotes")
+@JsonClass(generateAdapter = true)
 data class QuoteEntity(
     @PrimaryKey val uniqueId: String,
     val text: String,
@@ -36,6 +40,7 @@ data class QuoteEntity(
 )
 
 @Entity(tableName = "daily_reports")
+@JsonClass(generateAdapter = true)
 data class DailyReportEntity(
     @PrimaryKey val date: String, // YYYY-MM-DD
     val isSubmitted: Boolean = false,

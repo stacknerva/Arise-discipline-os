@@ -22,4 +22,13 @@ class DisciplineRepository(private val db: AppDatabase) {
     suspend fun getReportForDate(date: String) = db.dailyReportDao().getReportForDate(date)
     fun getAllReportsFlow() = db.dailyReportDao().getAllReportsFlow()
     suspend fun insertReport(report: DailyReportEntity) = db.dailyReportDao().insertReport(report)
+
+    suspend fun getAllTemplatesSync() = db.routineDao().getAllTemplatesSync()
+    suspend fun deleteAllTemplates() = db.routineDao().deleteAllTemplates()
+    
+    suspend fun getAllTasksSync() = db.dailyTaskDao().getAllTasksSync()
+    suspend fun deleteAllTasks() = db.dailyTaskDao().deleteAllTasks()
+    
+    suspend fun getAllReportsSync() = db.dailyReportDao().getAllReportsSync()
+    suspend fun deleteAllReports() = db.dailyReportDao().deleteAllReports()
 }

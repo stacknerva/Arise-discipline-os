@@ -14,9 +14,11 @@ import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @OptIn(ExperimentalCoroutinesApi::class)
+
 class DisciplineViewModel(
     private val repository: DisciplineRepository,
     private val settingsRepository: SettingsRepository,
+    private val syncManager: CloudSyncManager = CloudSyncManager(repository, settingsRepository),
     private val notificationHelper: NotificationHelper,
     private val apiService: QuoteApiService,
     private val timeApiService: WorldTimeApiService
@@ -41,6 +43,118 @@ class DisciplineViewModel(
     val currentReport = _currentDate.flatMapLatest { date ->
         repository.getReportForDateFlow(date)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    
+
+    val showCloudImportDialog = MutableStateFlow(false)
+    val isUserSignedIn = MutableStateFlow(syncManager.isUserSignedIn())
+
+    private fun triggerCloudSync() {
+        if (syncManager.isUserSignedIn()) {
+            viewModelScope.launch {
+                syncManager.syncToCloud()
+            }
+        }
+    }
+
+    private suspend fun backupGuestData() {
+        val templates = repository.getAllTemplatesSync()
+        val tasks = repository.getAllTasksSync()
+        val reports = repository.getAllReportsSync()
+        val streak = settingsRepository.currentStreak.first()
+        val dateStr = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault()).format(Date())
+        val backup = AppBackup(templates, tasks, reports, streak, dateStr)
+        val moshi = com.squareup.moshi.Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+        val json = moshi.adapter(AppBackup::class.java).toJson(backup)
+        settingsRepository.setGuestBackup(json)
+    }
+
+    fun handleSignIn(context: android.content.Context) {
+        isUserSignedIn.value = true
+        viewModelScope.launch {
+            if (syncManager.hasCloudData()) {
+                backupGuestData()
+                val success = syncManager.fetchFromCloud()
+                if (success) {
+                    val now = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+                    setLastSyncTime("Today at $now")
+                }
+            } else {
+                showCloudImportDialog.value = true
+            }
+        }
+    }
+
+    fun handleSignOut() {
+        isUserSignedIn.value = false
+        viewModelScope.launch {
+            val json = settingsRepository.guestBackup.first()
+            if (json != null) {
+                val moshi = com.squareup.moshi.Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+                val backup = moshi.adapter(AppBackup::class.java).fromJson(json)
+                if (backup != null) {
+                    repository.deleteAllTemplates()
+                    repository.deleteAllTasks()
+                    repository.deleteAllReports()
+                    backup.templates.forEach { repository.insertTemplate(it) }
+                    repository.insertTasks(backup.tasks)
+                    backup.reports.forEach { repository.insertReport(it) }
+                    settingsRepository.setCurrentStreak(backup.currentStreak)
+                }
+            }
+        }
+    }
+
+    fun onImportCloudData(import: Boolean) {
+        showCloudImportDialog.value = false
+        viewModelScope.launch {
+            if (import) {
+                syncManager.syncToCloud()
+                val now = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+                setLastSyncTime("Today at $now")
+            } else {
+                backupGuestData()
+                repository.deleteAllTemplates()
+                repository.deleteAllTasks()
+                repository.deleteAllReports()
+                settingsRepository.setCurrentStreak(0)
+                syncManager.syncToCloud()
+                val now = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+                setLastSyncTime("Today at $now")
+            }
+        }
+    }
+
+    fun manualSync(context: android.content.Context) {
+        viewModelScope.launch {
+            if (syncManager.isUserSignedIn()) {
+                val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+                val activeNetwork = cm.activeNetworkInfo
+                val isConnected = activeNetwork?.isConnectedOrConnecting == true
+                
+                if (isConnected) {
+                    syncManager.syncToCloud()
+                    syncManager.fetchFromCloud()
+                    val now = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+                    setLastSyncTime("Today at $now")
+                    android.widget.Toast.makeText(context, "Sync completed.", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    android.widget.Toast.makeText(context, "No internet connection. Your changes will sync automatically when you're back online.", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    val isRoutineExpanded = settingsRepository.isRoutineExpanded.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val lastSyncTime = settingsRepository.lastSyncTime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun setRoutineExpanded(expanded: Boolean) {
+        viewModelScope.launch { settingsRepository.setRoutineExpanded(expanded)
+            triggerCloudSync() }
+    }
+    
+    fun setLastSyncTime(time: String) {
+        viewModelScope.launch { settingsRepository.setLastSyncTime(time) }
+    }
     
     val quoteOfTheDay = settingsRepository.currentQuoteId.flatMapLatest { id ->
         if (id.isNullOrEmpty()) flowOf(null) else repository.getQuoteByIdFlow(id)
@@ -113,6 +227,7 @@ class DisciplineViewModel(
         
         viewModelScope.launch {
             checkAndInitializeDay(_currentDate.value)
+            triggerCloudSync()
             val savedQuoteDate = settingsRepository.currentQuoteDate.first()
             if (savedQuoteDate != _currentDate.value) {
                 syncQuoteForToday(_currentDate.value)
@@ -256,6 +371,7 @@ class DisciplineViewModel(
     fun toggleTaskMissed(task: DailyTaskEntity) {
         viewModelScope.launch {
             repository.updateTask(task.copy(isMissed = !task.isMissed))
+            triggerCloudSync()
         }
     }
 
@@ -277,6 +393,7 @@ class DisciplineViewModel(
             
             val current = settingsRepository.currentStreak.first()
             settingsRepository.setCurrentStreak(current + 1)
+            triggerCloudSync()
         }
     }
 
@@ -286,6 +403,7 @@ class DisciplineViewModel(
             val report = repository.getReportForDate(dateStr) ?: return@launch
             if (!report.isSubmitted) {
                 repository.insertReport(report.copy(isSkipped = true, status = "skipped", isSubmitted = true))
+            triggerCloudSync()
             }
         }
     }
@@ -304,6 +422,7 @@ class DisciplineViewModel(
                     orderIndex = template.orderIndex
                 ))
             }
+            triggerCloudSync()
         }
     }
     
@@ -314,6 +433,7 @@ class DisciplineViewModel(
             // A clean way is just deleting today's tasks and letting checkAndInitializeDay recreate.
             repository.deleteTasksForDate(_currentDate.value)
             checkAndInitializeDay(_currentDate.value)
+            triggerCloudSync()
         }
     }
 
@@ -322,6 +442,7 @@ class DisciplineViewModel(
             repository.deleteTemplate(id)
             repository.deleteTasksForDate(_currentDate.value)
             checkAndInitializeDay(_currentDate.value)
+            triggerCloudSync()
         }
     }
 
@@ -334,5 +455,68 @@ class DisciplineViewModel(
 
     fun setCurrentDate(date: String) {
         _currentDate.value = date
+    }
+    fun exportBackup(context: android.content.Context, uri: android.net.Uri, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val templates = repository.getAllTemplatesSync()
+                val tasks = repository.getAllTasksSync()
+                val reports = repository.getAllReportsSync()
+                val streak = settingsRepository.currentStreak.first()
+                val dateStr = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault()).format(Date())
+                
+                val backup = AppBackup(templates, tasks, reports, streak, dateStr)
+                
+                val moshi = com.squareup.moshi.Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+                val adapter = moshi.adapter(AppBackup::class.java)
+                val json = adapter.toJson(backup)
+                
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(json.toByteArray())
+                }
+                onResult(true, null)
+            } catch (e: Exception) {
+                Log.e("Backup", "Error exporting backup", e)
+                onResult(false, e.message)
+            }
+        }
+    }
+    
+    fun importBackup(context: android.content.Context, uri: android.net.Uri, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val json = context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader().use { it.readText() }
+                }
+                
+                if (json != null) {
+                    val moshi = com.squareup.moshi.Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+                    val adapter = moshi.adapter(AppBackup::class.java)
+                    val backup = adapter.fromJson(json)
+                    
+                    if (backup != null) {
+                        repository.deleteAllTemplates()
+                        repository.deleteAllTasks()
+                        repository.deleteAllReports()
+                        
+                        for (t in backup.templates) {
+                            repository.insertTemplate(t)
+                        }
+                        repository.insertTasks(backup.tasks)
+                        for (r in backup.reports) {
+                            repository.insertReport(r)
+                        }
+                        settingsRepository.setCurrentStreak(backup.currentStreak)
+                        triggerCloudSync()
+                        onResult(true, null)
+                        return@launch
+                    }
+                }
+                onResult(false, "Invalid backup format")
+            } catch (e: Exception) {
+                Log.e("Backup", "Error importing backup", e)
+                onResult(false, e.message)
+            }
+        }
     }
 }
