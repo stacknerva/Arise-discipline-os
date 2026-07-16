@@ -1,21 +1,115 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# ARISE
 
-# Run and deploy your AI Studio app
+> A minimalist discipline operating system built for execution, not motivation.
 
-This contains everything you need to run your app locally.
+ARISE is an Android application designed to reduce decisions and maximize execution. It focuses on helping you complete today's work instead of managing endless tasks, streaks, or distractions.
 
-View your app in AI Studio: https://ai.studio/apps/5aee8ced-a203-4f30-9df7-b82f1146aaf1
+Unlike traditional productivity apps, ARISE follows one principle:
 
-## Run Locally
+> **Reduce decisions. Increase execution.**
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+---
 
+# Features
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+- Minimal black-and-white interface
+- Pixel-inspired design
+- Daily routine management
+- Daily discipline reports
+- Calendar with historical reports
+- Daily philosophy quotes
+- Internet-synced quote engine with offline cache
+- Skip Today option
+- Offline-first experience
+- Lightweight and distraction-free
+
+---
+
+# Philosophy
+
+ARISE is **not**:
+
+- A productivity app
+- A habit tracker
+- A journal
+- A motivation app
+- A social platform
+
+ARISE is a personal operating system for discipline.
+
+It presents what matters today, records the outcome, and gets out of your way.
+
+---
+
+# Screenshots
+
+| Home | Calendar | Daily Report | Settings |
+|------|----------|--------------|----------|
+| *(Coming Soon)* | *(Coming Soon)* | *(Coming Soon)* | *(Coming Soon)* |
+
+---
+
+# Installation
+
+Download the latest APK from the Releases page.
+
+**Latest Release**
+
+https://github.com/stacknerva/Arise-discipline-os/releases/latest
+
+---
+
+# Built With
+
+- Kotlin
+- Jetpack Compose
+- Material 3
+- Room Database
+- Gradle
+- GitHub Actions
+
+---
+
+# Roadmap
+
+## Version 1.0
+- ✅ Daily routines
+- ✅ Daily reports
+- ✅ Calendar history
+- ✅ Quote engine
+- ✅ Offline support
+- ✅ GitHub Actions APK builds
+
+## Future
+
+- Cloud backup
+- Optional encrypted sync
+- Performance improvements
+- More customization without increasing complexity
+
+---
+
+# Contributing
+
+Bug reports and suggestions are welcome.
+
+If you find an issue, open a GitHub Issue.
+
+---
+
+# License
+
+This project is licensed under the MIT License.
+
+---
+
+# Author
+
+**Gulshan Attri**
+
+GitHub:
+https://github.com/stacknerva
+
+---
+
+> **Discipline is built through action, not intention.**
