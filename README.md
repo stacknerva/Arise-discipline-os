@@ -1,21 +1,87 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Arise
 
-# Run and deploy your AI Studio app
+A minimalist, offline-first discipline tracker designed to help users follow a structured daily routine without distractions.
 
-This contains everything you need to run your app locally.
+Unlike traditional habit trackers, Discipline is not built around streaks, badges, XP, or gamification. It exists for one purpose: helping you follow your schedule consistently.
 
-View your app in AI Studio: https://ai.studio/apps/5aee8ced-a203-4f30-9df7-b82f1146aaf1
+## Features
 
-## Run Locally
+- Minimal black-and-white interface
+- Daily routine timeline
+- Automatic current task detection
+- Local notifications before each scheduled task
+- Quote of the Day
+- Daily report
+- Monthly calendar
+- Streak tracking
+- Skip Day support
+- Fully customizable routine
+- Offline-first design
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+## Philosophy
 
+Discipline is designed to disappear into the background.
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+It does not try to motivate, entertain, or reward you.
+
+It simply reminds you what should be done, records whether it was done, and gets out of your way.
+
+## Screens
+
+- Home
+- Calendar
+- Daily Report
+- Settings
+- Routine Editor
+
+## Future Add-ons
+
+The following features are planned for future updates while preserving the app's minimalist philosophy.
+
+- Home screen widget showing the current task
+- Backup & Restore
+- Cross-device synchronization
+- Multiple routine profiles (Study, Work, Holiday, etc.)
+- Routine templates
+- Custom notification sounds
+- Rich notification actions (Mark as Started, Snooze)
+- Weekly and yearly discipline statistics
+- Searchable report history
+- Export reports (PDF/CSV)
+- Import/Export settings
+- Advanced quote filtering (themes, authors)
+- Multiple quote collections
+- Calendar improvements
+- Dynamic scheduling for recurring routines
+- Custom reminder offsets for individual tasks
+- Focus mode integration
+- Wear OS support
+- Desktop support
+- Tablet optimized layout
+- Lock-screen widget
+- Quick Actions from notifications
+- Better accessibility support
+- Localization (multiple languages)
+- Optional cloud sync
+- Data encryption
+
+## Tech Stack
+
+- Flutter
+- Dart
+- Material 3
+- Riverpod
+- Isar Database
+- Local Notifications
+
+## Roadmap
+
+- Backup & Restore
+- Export reports
+- Multiple routines
+- Widgets
+- Cross-device synchronization
+
+## License
+
+MIT License
