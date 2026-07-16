@@ -124,6 +124,7 @@ class DisciplineViewModel(
         }
     }
 
+    @Suppress("DEPRECATION")
     fun manualSync(context: android.content.Context) {
         viewModelScope.launch {
             if (syncManager.isUserSignedIn()) {

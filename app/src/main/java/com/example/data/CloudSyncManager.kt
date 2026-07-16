@@ -66,6 +66,7 @@ class CloudSyncManager(
         }
     }
     
+    @Suppress("UNCHECKED_CAST")
     suspend fun fetchFromCloud(): Boolean {
         val user = auth.currentUser ?: return false
         

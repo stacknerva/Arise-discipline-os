@@ -203,7 +203,7 @@ fun CalendarScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Uni
         
         item {
             Spacer(modifier = Modifier.height(24.dp))
-            Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(24.dp))
             
             if (selectedDate == null) {
@@ -264,7 +264,7 @@ fun CalendarScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Uni
         
         item {
             Spacer(modifier = Modifier.height(32.dp))
-            Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(24.dp))
             
             Text("MONTH SUMMARY", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))

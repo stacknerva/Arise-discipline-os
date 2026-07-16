@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.rotate
 
 
+@Suppress("DEPRECATION")
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun SettingsScreen(viewModel: DisciplineViewModel) {
@@ -94,11 +95,11 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
                         googleAccount = account
                         viewModel.handleSignIn(context)
                     } else {
-                        Toast.makeText(context, "Firebase auth failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Firebase auth failed: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: ApiException) {
-                Toast.makeText(context, "Sign in failed", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -380,6 +381,7 @@ fun AddRoutineDialog(template: RoutineTemplateEntity?, onDismiss: () -> Unit, on
 }
 
 
+@Suppress("DEPRECATION")
 @Composable
 fun AccountSection(account: GoogleSignInAccount?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
     Card(
@@ -443,6 +445,7 @@ fun AccountSection(account: GoogleSignInAccount?, onSignIn: () -> Unit, onSignOu
     }
 }
 
+@Suppress("DEPRECATION")
 @Composable
 fun SyncStatusSection(account: GoogleSignInAccount?, lastSyncTime: String?, onSync: () -> Unit) {
     Card(
