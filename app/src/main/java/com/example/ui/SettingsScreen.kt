@@ -83,7 +83,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     var showImportDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     var signInError by remember { mutableStateOf<String?>(null) }
-    var googleAccount by remember { mutableStateOf(GoogleSignIn.getLastSignedInAccount(context)) }
+    var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
     
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -121,7 +121,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
                     val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
                     FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).addOnCompleteListener { authTask ->
                         if (authTask.isSuccessful) {
-                            googleAccount = GoogleSignIn.getLastSignedInAccount(context)
+                            currentUser = FirebaseAuth.getInstance().currentUser
                             viewModel.handleSignIn(context)
                         } else {
                             signInError = "Firebase auth failed: ${authTask.exception?.message}"
@@ -173,12 +173,12 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
         item {
             Text("ACCOUNT", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
             AccountSection(
-                account = googleAccount,
+                account = currentUser,
                 onSignIn = { doGoogleSignIn() },
                 onSignOut = { 
                     googleSignInClient.signOut().addOnCompleteListener {
                         FirebaseAuth.getInstance().signOut()
-                        googleAccount = null
+                        currentUser = null
                         viewModel.handleSignOut()
                     }
                 }
@@ -187,7 +187,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
             
             Text("SYNC STATUS", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
             SyncStatusSection(
-                account = googleAccount,
+                account = currentUser,
                 lastSyncTime = lastSyncTime,
                 onSync = {
                     viewModel.manualSync(context)
@@ -428,7 +428,7 @@ fun AddRoutineDialog(template: RoutineTemplateEntity?, onDismiss: () -> Unit, on
 
 @Suppress("DEPRECATION")
 @Composable
-fun AccountSection(account: GoogleSignInAccount?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
+fun AccountSection(account: com.google.firebase.auth.FirebaseUser?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -492,7 +492,7 @@ fun AccountSection(account: GoogleSignInAccount?, onSignIn: () -> Unit, onSignOu
 
 @Suppress("DEPRECATION")
 @Composable
-fun SyncStatusSection(account: GoogleSignInAccount?, lastSyncTime: String?, onSync: () -> Unit) {
+fun SyncStatusSection(account: com.google.firebase.auth.FirebaseUser?, lastSyncTime: String?, onSync: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
