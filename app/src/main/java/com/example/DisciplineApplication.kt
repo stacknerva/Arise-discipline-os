@@ -41,9 +41,15 @@ class DisciplineApplication : Application() {
                     RoutineTemplateEntity(title = "Lunch", startTimeStr = "13:00", endTimeStr = "14:00", orderIndex = 4),
                     RoutineTemplateEntity(title = "Mathematics Lecture", startTimeStr = "14:00", endTimeStr = "16:00", orderIndex = 5),
                     RoutineTemplateEntity(title = "Self Study", startTimeStr = "16:30", endTimeStr = "20:00", orderIndex = 6),
-                    RoutineTemplateEntity(title = "Sleep", startTimeStr = "21:00", endTimeStr = "21:00", orderIndex = 7)
+                    RoutineTemplateEntity(title = "Sleep", startTimeStr = "21:00", endTimeStr = "04:00", orderIndex = 7)
                 )
                 initialRoutines.forEach { repository.insertTemplate(it) }
+            } else {
+                // Fix for existing Sleep routines with wrong end time
+                val sleepRoutine = templates.find { it.title == "Sleep" && it.startTimeStr == "21:00" && it.endTimeStr == "21:00" }
+                if (sleepRoutine != null) {
+                    repository.updateTemplate(sleepRoutine.copy(endTimeStr = "04:00"))
+                }
             }
         }
     }

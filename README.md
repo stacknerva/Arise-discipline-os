@@ -1,98 +1,21 @@
-# Arise
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-A minimalist discipline operating system built to help you follow your daily routine with consistency.
+# Run and deploy your AI Studio app
 
-Arise is intentionally simple. It avoids gamification, badges, XP, streak celebrations, and other distracting elements. It exists for one purpose: helping you follow your schedule, record your discipline, and stay accountable.
+This contains everything you need to run your app locally.
 
----
+View your app in AI Studio: https://ai.studio/apps/5aee8ced-a203-4f30-9df7-b82f1146aaf1
 
-## Features
+## Run Locally
 
-- Minimal black-and-white interface
-- Daily routine timeline
-- Automatic current task detection
-- Local notifications (5 minutes before each task)
-- Daily Quote
-- Daily Report
-- Monthly discipline calendar
-- Streak tracking
-- Skip Day support
-- Fully customizable routine
-- Offline-first with network time synchronization when available
-- Lightweight and distraction-free
+**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
 
----
 
-## Philosophy
-
-Arise is designed to disappear into the background.
-
-It doesn't try to motivate you.
-
-It doesn't reward you.
-
-It doesn't entertain you.
-
-It simply reminds you what should be done, records whether it was done, and gets out of your way.
-
----
-
-## Screens
-
-- Home
-- Calendar
-- Daily Report
-- Settings
-- Routine Editor
-
----
-
-## Tech Stack
-
-- Flutter
-- Dart
-- Material 3
-- Riverpod
-- Isar Database
-- Local Notifications
-
----
-
-## Future Add-ons
-
-The following features are planned while preserving the app's minimalist philosophy.
-
-- Home Screen Widget
-- Backup & Restore
-- Cross-device Synchronization
-- Multiple Routine Profiles
-- Routine Templates
-- Custom Notification Sounds
-- Rich Notification Actions
-- Weekly & Yearly Statistics
-- Searchable Report History
-- Export Reports (PDF/CSV)
-- Import & Export Settings
-- Advanced Quote Filtering
-- Multiple Quote Collections
-- Calendar Improvements
-- Dynamic Scheduling
-- Custom Reminder Offsets
-- Focus Mode Integration
-- Wear OS Support
-- Desktop Support
-- Tablet Optimized Layout
-- Lock Screen Widget
-- Quick Actions from Notifications
-- Accessibility Improvements
-- Multi-language Support
-- Optional Cloud Sync
-- End-to-End Data Encryption
-
-> Arise will always remain minimal. New features will only be added if they improve usability without introducing unnecessary complexity or distractions.
-
----
-
-## License
-
-This project is licensed under the MIT License.
+1. Open Android Studio
+2. Select **Open** and choose the directory containing this project
+3. Allow Android Studio to fix any incompatibilities as it imports the project.
+4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
+5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
+6. Run the app on an emulator or physical device

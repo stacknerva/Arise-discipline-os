@@ -65,7 +65,9 @@ class NotificationHelper(private val context: Context) {
             // Subtract offset
             calendar.add(Calendar.MINUTE, -template.notificationOffsetMins)
             
-            if (calendar.before(now)) continue 
+            if (calendar.before(now)) {
+                calendar.add(Calendar.DAY_OF_YEAR, 1)
+            }
             
             val intent = Intent(context, AlarmReceiver::class.java).apply {
                 putExtra("TASK_TITLE", task.title)
@@ -104,7 +106,11 @@ class NotificationHelper(private val context: Context) {
             set(Calendar.MILLISECOND, 0)
         }
         
-        if (reportCalendar.after(now)) {
+        if (reportCalendar.before(now)) {
+            reportCalendar.add(Calendar.DAY_OF_YEAR, 1)
+        }
+        
+        if (true) {
             val reportIntent = Intent(context, AlarmReceiver::class.java).apply {
                 putExtra("IS_REPORT", true)
             }
