@@ -16,7 +16,7 @@ import androidx.core.app.NotificationCompat
 import java.util.Calendar
 
 class NotificationHelper(private val context: Context) {
-    private val channelId = "arise_reminders_v3"
+    private val channelId = "arise_reminders_v4"
     
     init {
         createNotificationChannel()
@@ -24,7 +24,7 @@ class NotificationHelper(private val context: Context) {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.arise_notification}")
+            val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/arise_notification")
             Log.d("NotificationHelper", "Creating notification channel '$channelId' with sound URI: $soundUri")
 
             try {
@@ -50,8 +50,8 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showNotification(title: String, content: String, notificationId: Int = System.currentTimeMillis().toInt()) {
-        val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.arise_notification}")
+    fun showNotification(title: String, content: String, notificationId: Int = java.util.UUID.randomUUID().hashCode()) {
+        val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/arise_notification")
         Log.d("NotificationHelper", "Showing notification with channel ID: $channelId, Sound URI: $soundUri")
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
