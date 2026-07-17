@@ -9,63 +9,143 @@ import android.content.Context
 import com.example.R
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.util.Calendar
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 
 class NotificationHelper(private val context: Context) {
-    private val channelId = "arise_reminders_v4"
     
     init {
         createNotificationChannel()
     }
 
+    private fun getActiveChannelId(mode: String, uriStr: String?): String {
+        return when (mode) {
+            "silent" -> "arise_reminders_silent"
+            "custom" -> "arise_reminders_custom_${uriStr?.hashCode() ?: "none"}"
+            else -> "arise_reminders_default"
+        }
+    }
+
+    private fun getSoundSettings(): Pair<String, String?> {
+        return try {
+            runBlocking {
+                val repository = SettingsRepository(context)
+                val mode = repository.notificationSoundMode.first()
+                val uri = repository.notificationSoundUri.first()
+                Pair(mode, uri)
+            }
+        } catch (e: Exception) {
+            Log.e("NotificationHelper", "Failed to load sound settings, falling back to default", e)
+            Pair("default", null)
+        }
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/arise_notification")
-            Log.d("NotificationHelper", "Creating notification channel '$channelId' with sound URI: $soundUri")
+            val (mode, uriStr) = getSoundSettings()
+            createChannelForMode(mode, uriStr)
+        }
+    }
 
+    private fun createChannelForMode(mode: String, uriStr: String?) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = getActiveChannelId(mode, uriStr)
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // Try to delete legacy default channel if it exists
             try {
-                val channel = NotificationChannel(
-                    channelId,
-                    "Arise Reminders",
-                    NotificationManager.IMPORTANCE_HIGH
-                ).apply {
-                    description = "Notifies you at the start of your routine tasks"
-                    
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .build()
-                    setSound(soundUri, audioAttributes)
+                notificationManager.deleteNotificationChannel("arise_reminders_v4")
+            } catch (e: Exception) {
+                // Ignore
+            }
+
+            val name = "Arise Reminders"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, name, importance).apply {
+                description = "Notifies you at the start of your routine tasks"
+                
+                val audioAttributes = AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .build()
+                
+                when (mode) {
+                    "silent" -> {
+                        setSound(null, null)
+                    }
+                    "custom" -> {
+                        val soundUri = if (!uriStr.isNullOrEmpty()) {
+                            Uri.parse(uriStr)
+                        } else {
+                            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                        }
+                        setSound(soundUri, audioAttributes)
+                    }
+                    else -> {
+                        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                        setSound(soundUri, audioAttributes)
+                    }
                 }
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            }
+            
+            try {
                 notificationManager.createNotificationChannel(channel)
-                Log.d("NotificationHelper", "Notification channel '$channelId' created successfully")
+                Log.d("NotificationHelper", "Notification channel '$channelId' created successfully for mode '$mode'")
             } catch (e: Exception) {
                 Log.e("NotificationHelper", "Exception while creating notification channel", e)
             }
         }
     }
 
+    fun recreateNotificationChannel(mode: String, uriStr: String?) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createChannelForMode(mode, uriStr)
+        }
+    }
+
     fun showNotification(title: String, content: String, notificationId: Int = java.util.UUID.randomUUID().hashCode()) {
-        val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/arise_notification")
-        Log.d("NotificationHelper", "Showing notification with channel ID: $channelId, Sound URI: $soundUri")
+        val (mode, uriStr) = getSoundSettings()
+        val activeChannelId = getActiveChannelId(mode, uriStr)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createChannelForMode(mode, uriStr)
+        }
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         try {
-            val builder = NotificationCompat.Builder(context, channelId)
+            val builder = NotificationCompat.Builder(context, activeChannelId)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle(title)
                 .setContentText(content)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                .setSound(soundUri)
+            
+            when (mode) {
+                "silent" -> {
+                    // No sound
+                }
+                "custom" -> {
+                    val soundUri = if (!uriStr.isNullOrEmpty()) {
+                        Uri.parse(uriStr)
+                    } else {
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                    }
+                    builder.setSound(soundUri)
+                }
+                else -> {
+                    val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                    builder.setSound(soundUri)
+                }
+            }
             
             notificationManager.notify(notificationId, builder.build())
-            Log.d("NotificationHelper", "Notification shown successfully")
+            Log.d("NotificationHelper", "Notification shown successfully using channel '$activeChannelId'")
         } catch (e: Exception) {
             Log.e("NotificationHelper", "Exception while showing notification", e)
         }

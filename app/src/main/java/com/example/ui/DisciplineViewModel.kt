@@ -147,6 +147,8 @@ class DisciplineViewModel(
 
     val isRoutineExpanded = settingsRepository.isRoutineExpanded.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val lastSyncTime = settingsRepository.lastSyncTime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val notificationSoundMode = settingsRepository.notificationSoundMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "default")
+    val notificationSoundUri = settingsRepository.notificationSoundUri.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun setRoutineExpanded(expanded: Boolean) {
         viewModelScope.launch { settingsRepository.setRoutineExpanded(expanded)
@@ -155,6 +157,23 @@ class DisciplineViewModel(
     
     fun setLastSyncTime(time: String) {
         viewModelScope.launch { settingsRepository.setLastSyncTime(time) }
+    }
+
+    fun setNotificationSoundMode(mode: String) {
+        viewModelScope.launch {
+            settingsRepository.setNotificationSoundMode(mode)
+            val uri = settingsRepository.notificationSoundUri.first()
+            notificationHelper.recreateNotificationChannel(mode, uri)
+            triggerCloudSync()
+        }
+    }
+
+    fun setNotificationSoundUri(uri: String?) {
+        viewModelScope.launch {
+            settingsRepository.setNotificationSoundUri(uri)
+            notificationHelper.recreateNotificationChannel("custom", uri)
+            triggerCloudSync()
+        }
     }
     
     val quoteOfTheDay = settingsRepository.currentQuoteId.flatMapLatest { id ->

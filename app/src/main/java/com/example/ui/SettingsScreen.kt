@@ -2,6 +2,7 @@ package com.example.ui
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.media.RingtoneManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -85,6 +86,37 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     val context = LocalContext.current
     var signInError by remember { mutableStateOf<String?>(null) }
     var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
+    
+    val notificationSoundMode by viewModel.notificationSoundMode.collectAsStateWithLifecycle()
+    val notificationSoundUri by viewModel.notificationSoundUri.collectAsStateWithLifecycle()
+    var showSoundDialog by remember { mutableStateOf(false) }
+
+    val ringtonePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uri = (result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI) as? Uri)
+                ?: result.data?.data
+            if (uri != null) {
+                viewModel.setNotificationSoundUri(uri.toString())
+                viewModel.setNotificationSoundMode("custom")
+                Toast.makeText(context, "Custom notification sound selected.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val launchRingtonePicker = {
+        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Select Notification Sound")
+            if (!notificationSoundUri.isNullOrEmpty()) {
+                putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(notificationSoundUri))
+            }
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+        }
+        ringtonePickerLauncher.launch(intent)
+    }
     
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -222,6 +254,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
             Text("MANAGEMENT", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
             
             ListItemAction("Skip Today", onClick = { showSkipDialog = true })
+            ListItemAction("Notification Sound", onClick = { showSoundDialog = true })
             ListItemAction("About", onClick = { showAboutDialog = true })
             
             ListItemAction("Import Routine", onClick = { showImportDialog = true })
@@ -415,6 +448,99 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
             dismissButton = {
                 TextButton(onClick = { showImportDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showSoundDialog) {
+        AlertDialog(
+            onDismissRequest = { showSoundDialog = false },
+            title = { Text("NOTIFICATION SOUND") },
+            text = {
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                viewModel.setNotificationSoundMode("default")
+                                showSoundDialog = false
+                            }
+                            .padding(vertical = 12.dp)
+                    ) {
+                        RadioButton(
+                            selected = (notificationSoundMode == "default"),
+                            onClick = {
+                                viewModel.setNotificationSoundMode("default")
+                                showSoundDialog = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("System Default")
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                viewModel.setNotificationSoundMode("silent")
+                                showSoundDialog = false
+                            }
+                            .padding(vertical = 12.dp)
+                    ) {
+                        RadioButton(
+                            selected = (notificationSoundMode == "silent"),
+                            onClick = {
+                                viewModel.setNotificationSoundMode("silent")
+                                showSoundDialog = false
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Silent")
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showSoundDialog = false
+                                launchRingtonePicker()
+                            }
+                            .padding(vertical = 12.dp)
+                    ) {
+                        RadioButton(
+                            selected = (notificationSoundMode == "custom"),
+                            onClick = {
+                                showSoundDialog = false
+                                launchRingtonePicker()
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text("Choose Custom Sound")
+                            if (notificationSoundMode == "custom" && !notificationSoundUri.isNullOrEmpty()) {
+                                val friendlyTitle = try {
+                                    val ringtone = RingtoneManager.getRingtone(context, Uri.parse(notificationSoundUri))
+                                    ringtone?.getTitle(context) ?: "Custom Sound"
+                                } catch (e: Exception) {
+                                    "Custom Sound"
+                                }
+                                Text(
+                                    text = friendlyTitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSoundDialog = false }) {
+                    Text("CLOSE")
                 }
             }
         )

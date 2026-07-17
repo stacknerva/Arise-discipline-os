@@ -19,6 +19,8 @@ class SettingsRepository(private val context: Context) {
     private val IS_ROUTINE_EXPANDED_KEY = booleanPreferencesKey("is_routine_expanded")
     private val LAST_SYNC_TIME_KEY = stringPreferencesKey("last_sync_time")
     private val GUEST_BACKUP_KEY = stringPreferencesKey("guest_backup")
+    private val NOTIFICATION_SOUND_MODE_KEY = stringPreferencesKey("notification_sound_mode")
+    private val NOTIFICATION_SOUND_URI_KEY = stringPreferencesKey("notification_sound_uri")
 
     val currentStreak: Flow<Int> = context.dataStore.data.map { it[CURRENT_STREAK_KEY] ?: 0 }
     val currentQuoteDate: Flow<String?> = context.dataStore.data.map { it[CURRENT_QUOTE_DATE_KEY] }
@@ -26,6 +28,8 @@ class SettingsRepository(private val context: Context) {
     val isRoutineExpanded: Flow<Boolean> = context.dataStore.data.map { it[IS_ROUTINE_EXPANDED_KEY] ?: false }
     val lastSyncTime: Flow<String?> = context.dataStore.data.map { it[LAST_SYNC_TIME_KEY] }
     val guestBackup: Flow<String?> = context.dataStore.data.map { it[GUEST_BACKUP_KEY] }
+    val notificationSoundMode: Flow<String> = context.dataStore.data.map { it[NOTIFICATION_SOUND_MODE_KEY] ?: "default" }
+    val notificationSoundUri: Flow<String?> = context.dataStore.data.map { it[NOTIFICATION_SOUND_URI_KEY] }
 
     suspend fun setCurrentStreak(streak: Int) {
         context.dataStore.edit { it[CURRENT_STREAK_KEY] = streak }
@@ -47,6 +51,14 @@ class SettingsRepository(private val context: Context) {
     suspend fun setGuestBackup(json: String?) {
         context.dataStore.edit { prefs -> 
             if (json == null) prefs.remove(GUEST_BACKUP_KEY) else prefs[GUEST_BACKUP_KEY] = json 
+        }
+    }
+    suspend fun setNotificationSoundMode(mode: String) {
+        context.dataStore.edit { it[NOTIFICATION_SOUND_MODE_KEY] = mode }
+    }
+    suspend fun setNotificationSoundUri(uri: String?) {
+        context.dataStore.edit { prefs ->
+            if (uri == null) prefs.remove(NOTIFICATION_SOUND_URI_KEY) else prefs[NOTIFICATION_SOUND_URI_KEY] = uri
         }
     }
 }
