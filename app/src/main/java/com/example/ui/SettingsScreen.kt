@@ -416,10 +416,35 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     if (showSkipDialog) {
         AlertDialog(
             onDismissRequest = { showSkipDialog = false },
-            title = { Text("Skip Today's Schedule?") },
-            text = { Text("Use this only if your schedule genuinely could not be followed because of illness, travel, exams, emergencies or unavoidable circumstances.\n\nThis will not increase or break your streak.") },
-            confirmButton = { TextButton(onClick = { viewModel.skipToday(); showSkipDialog = false }) { Text("SKIP TODAY", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showSkipDialog = false }) { Text("CANCEL") } }
+            title = { 
+                Text(
+                    text = "Skip Today?", 
+                    style = MaterialTheme.typography.titleMedium
+                ) 
+            },
+            text = { 
+                Text(
+                    text = "Skipping today permanently wastes this day.\n\n• Today's routine will end immediately.\n• No tasks can be completed today.\n• Today's report will not be generated.\n• This day cannot be recovered.\n• Your goal is now one day further away.\n\nOnly skip today if you have genuinely decided to give up today's progress.",
+                    style = MaterialTheme.typography.bodyMedium
+                ) 
+            },
+            confirmButton = { 
+                TextButton(
+                    onClick = { 
+                        viewModel.skipToday()
+                        showSkipDialog = false 
+                    }
+                ) { 
+                    Text("Skip Today", color = MaterialTheme.colorScheme.error) 
+                } 
+            },
+            dismissButton = { 
+                TextButton(
+                    onClick = { showSkipDialog = false }
+                ) { 
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant) 
+                } 
+            }
         )
     }
     

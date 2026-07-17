@@ -149,6 +149,7 @@ class DisciplineViewModel(
     val lastSyncTime = settingsRepository.lastSyncTime.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val notificationSoundMode = settingsRepository.notificationSoundMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "default")
     val notificationSoundUri = settingsRepository.notificationSoundUri.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val skippedMessageIndex = settingsRepository.skippedMessageIndex.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun setRoutineExpanded(expanded: Boolean) {
         viewModelScope.launch { settingsRepository.setRoutineExpanded(expanded)
@@ -423,7 +424,8 @@ class DisciplineViewModel(
             val report = repository.getReportForDate(dateStr) ?: return@launch
             if (!report.isSubmitted) {
                 repository.insertReport(report.copy(isSkipped = true, status = "skipped", isSubmitted = true))
-            triggerCloudSync()
+                settingsRepository.incrementSkippedMessageIndex()
+                triggerCloudSync()
             }
         }
     }

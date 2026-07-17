@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.DailyTaskEntity
@@ -30,6 +31,31 @@ fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
     val currentStreak by viewModel.currentStreak.collectAsStateWithLifecycle()
     val currentCal by viewModel.currentTime.collectAsStateWithLifecycle()
     val isReportAvailable by viewModel.isReportAvailable.collectAsStateWithLifecycle()
+    val currentReport by viewModel.currentReport.collectAsStateWithLifecycle()
+    val skippedMessageIndex by viewModel.skippedMessageIndex.collectAsStateWithLifecycle()
+    
+    val skippedMessages = listOf(
+        "You wasted today.",
+        "Today was lost.",
+        "You made no progress today.",
+        "Your goal is now one day further away.",
+        "One day has been wasted.",
+        "You delayed your future by one day.",
+        "Today's progress: None.",
+        "You chose comfort over discipline today.",
+        "Nothing was achieved today.",
+        "You failed to move forward today.",
+        "This day will never come back.",
+        "You lost one opportunity to improve.",
+        "You postponed your growth today.",
+        "You added another day to your journey.",
+        "Today belongs to your excuses, not your goals.",
+        "Your discipline ended for today.",
+        "You gave up today's opportunity.",
+        "You cannot recover this day.",
+        "Time moved forward. You didn't.",
+        "Your future received nothing from you today."
+    )
     
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -110,80 +136,110 @@ fun HomeScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Unit) {
                 }
             }
             
-            Text(
-                text = "ROUTINE",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                itemsIndexed(tasks) { index, task ->
-                    val startParts = task.startTimeStr.split(":")
-                    val endParts = task.endTimeStr.split(":")
+            if (currentReport?.isSkipped == true) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "DAY SKIPPED",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
                     
-                    val startCal = currentCal.clone() as java.util.Calendar
-                    startCal.set(java.util.Calendar.HOUR_OF_DAY, startParts[0].toInt())
-                    startCal.set(java.util.Calendar.MINUTE, startParts[1].toInt())
-                    startCal.set(java.util.Calendar.SECOND, 0)
-                    startCal.set(java.util.Calendar.MILLISECOND, 0)
+                    val messageIndex = if (skippedMessageIndex > 0) (skippedMessageIndex - 1) % skippedMessages.size else 0
+                    val message = skippedMessages[messageIndex]
                     
-                    val endCal = currentCal.clone() as java.util.Calendar
-                    endCal.set(java.util.Calendar.HOUR_OF_DAY, endParts[0].toInt())
-                    endCal.set(java.util.Calendar.MINUTE, endParts[1].toInt())
-                    endCal.set(java.util.Calendar.SECOND, 0)
-                    endCal.set(java.util.Calendar.MILLISECOND, 0)
-                    
-                    if (endCal.before(startCal) || endCal == startCal) {
-                        // Overnight task spans midnight
-                        val currentHour = currentCal.get(java.util.Calendar.HOUR_OF_DAY)
-                        val currentMinute = currentCal.get(java.util.Calendar.MINUTE)
-                        val nowMinutes = currentHour * 60 + currentMinute
-                        val endMinutes = endParts[0].toInt() * 60 + endParts[1].toInt()
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+            } else {
+                Text(
+                    text = "ROUTINE",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    itemsIndexed(tasks) { index, task ->
+                        val startParts = task.startTimeStr.split(":")
+                        val endParts = task.endTimeStr.split(":")
                         
-                        if (nowMinutes < endMinutes) {
-                            // After midnight, but before the end time (e.g. 2:00 AM)
-                            startCal.add(java.util.Calendar.DAY_OF_YEAR, -1)
-                        } else {
-                            // Before start time (e.g. 3:00 PM), or after end time
-                            endCal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                        val startCal = currentCal.clone() as java.util.Calendar
+                        startCal.set(java.util.Calendar.HOUR_OF_DAY, startParts[0].toInt())
+                        startCal.set(java.util.Calendar.MINUTE, startParts[1].toInt())
+                        startCal.set(java.util.Calendar.SECOND, 0)
+                        startCal.set(java.util.Calendar.MILLISECOND, 0)
+                        
+                        val endCal = currentCal.clone() as java.util.Calendar
+                        endCal.set(java.util.Calendar.HOUR_OF_DAY, endParts[0].toInt())
+                        endCal.set(java.util.Calendar.MINUTE, endParts[1].toInt())
+                        endCal.set(java.util.Calendar.SECOND, 0)
+                        endCal.set(java.util.Calendar.MILLISECOND, 0)
+                        
+                        if (endCal.before(startCal) || endCal == startCal) {
+                            // Overnight task spans midnight
+                            val currentHour = currentCal.get(java.util.Calendar.HOUR_OF_DAY)
+                            val currentMinute = currentCal.get(java.util.Calendar.MINUTE)
+                            val nowMinutes = currentHour * 60 + currentMinute
+                            val endMinutes = endParts[0].toInt() * 60 + endParts[1].toInt()
+                            
+                            if (nowMinutes < endMinutes) {
+                                // After midnight, but before the end time (e.g. 2:00 AM)
+                                startCal.add(java.util.Calendar.DAY_OF_YEAR, -1)
+                            } else {
+                                // Before start time (e.g. 3:00 PM), or after end time
+                                endCal.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                            }
                         }
+                        
+                        val isCurrent = !currentCal.before(startCal) && currentCal.before(endCal)
+                        val isPast = !currentCal.before(endCal)
+                        
+                        TaskTimelineItem(task = task, isPast = isPast, isCurrent = isCurrent, isLast = index == tasks.lastIndex)
                     }
                     
-                    val isCurrent = !currentCal.before(startCal) && currentCal.before(endCal)
-                    val isPast = !currentCal.before(endCal)
-                    
-                    TaskTimelineItem(task = task, isPast = isPast, isCurrent = isCurrent, isLast = index == tasks.lastIndex)
-                }
-                
-                item {
-                    Spacer(modifier = Modifier.height(80.dp)) // padding for FAB
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp)) // padding for FAB
+                    }
                 }
             }
         }
         
-        FloatingActionButton(
-            onClick = {
-                if (isReportAvailable) {
-                    onNavigateToReport()
-                } else {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Daily Report is available only between 8:30 PM and 9:00 PM.")
+        if (currentReport?.isSkipped != true) {
+            FloatingActionButton(
+                onClick = {
+                    if (isReportAvailable) {
+                        onNavigateToReport()
+                    } else {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Daily Report is available only between 8:30 PM and 9:00 PM.")
+                        }
                     }
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-                .alpha(if (isReportAvailable) 1f else 0.4f),
-            containerColor = MaterialTheme.colorScheme.onBackground,
-            contentColor = MaterialTheme.colorScheme.background
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Assignment,
-                contentDescription = "Daily Report"
-            )
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp)
+                    .alpha(if (isReportAvailable) 1f else 0.4f),
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Assignment,
+                    contentDescription = "Daily Report"
+                )
+            }
         }
         
         SnackbarHost(

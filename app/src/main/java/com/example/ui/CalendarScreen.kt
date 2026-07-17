@@ -58,11 +58,11 @@ fun CalendarScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Uni
         var current = 0
         val sortedReports = reports.sortedBy { it.date }
         for (r in sortedReports) {
-            if (r.isSubmitted) {
+            if (r.isSkipped) {
+                // Do nothing
+            } else if (r.isSubmitted) {
                 current++
                 if (current > max) max = current
-            } else if (r.isSkipped) {
-                // Do nothing
             } else if (r.status == "missed") {
                 current = 0
             }
@@ -167,6 +167,14 @@ fun CalendarScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Uni
                             else -> ""
                         }
                         
+                        val symbolColor = when {
+                            report?.isSkipped == true -> MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+                            report?.status == "perfect" -> MaterialTheme.colorScheme.primary
+                            report?.status == "partial" -> MaterialTheme.colorScheme.secondary
+                            report?.status == "missed" || (report == null && isPast) -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.onBackground
+                        }
+                        
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
@@ -192,7 +200,7 @@ fun CalendarScreen(viewModel: DisciplineViewModel, onNavigateToReport: () -> Uni
                                 Text(
                                     text = symbol,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onBackground
+                                    color = symbolColor
                                 )
                             }
                         }

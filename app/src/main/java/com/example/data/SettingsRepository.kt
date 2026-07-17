@@ -21,6 +21,7 @@ class SettingsRepository(private val context: Context) {
     private val GUEST_BACKUP_KEY = stringPreferencesKey("guest_backup")
     private val NOTIFICATION_SOUND_MODE_KEY = stringPreferencesKey("notification_sound_mode")
     private val NOTIFICATION_SOUND_URI_KEY = stringPreferencesKey("notification_sound_uri")
+    private val SKIPPED_MESSAGE_INDEX_KEY = intPreferencesKey("skipped_message_index")
 
     val currentStreak: Flow<Int> = context.dataStore.data.map { it[CURRENT_STREAK_KEY] ?: 0 }
     val currentQuoteDate: Flow<String?> = context.dataStore.data.map { it[CURRENT_QUOTE_DATE_KEY] }
@@ -30,6 +31,7 @@ class SettingsRepository(private val context: Context) {
     val guestBackup: Flow<String?> = context.dataStore.data.map { it[GUEST_BACKUP_KEY] }
     val notificationSoundMode: Flow<String> = context.dataStore.data.map { it[NOTIFICATION_SOUND_MODE_KEY] ?: "default" }
     val notificationSoundUri: Flow<String?> = context.dataStore.data.map { it[NOTIFICATION_SOUND_URI_KEY] }
+    val skippedMessageIndex: Flow<Int> = context.dataStore.data.map { it[SKIPPED_MESSAGE_INDEX_KEY] ?: 0 }
 
     suspend fun setCurrentStreak(streak: Int) {
         context.dataStore.edit { it[CURRENT_STREAK_KEY] = streak }
@@ -59,6 +61,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setNotificationSoundUri(uri: String?) {
         context.dataStore.edit { prefs ->
             if (uri == null) prefs.remove(NOTIFICATION_SOUND_URI_KEY) else prefs[NOTIFICATION_SOUND_URI_KEY] = uri
+        }
+    }
+    suspend fun incrementSkippedMessageIndex() {
+        context.dataStore.edit { prefs ->
+            val current = prefs[SKIPPED_MESSAGE_INDEX_KEY] ?: 0
+            prefs[SKIPPED_MESSAGE_INDEX_KEY] = current + 1
         }
     }
 }
