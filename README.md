@@ -124,30 +124,70 @@ UI
 
 # Installation
 
-Clone the repository
+There are two ways to get started with ARISE.
+
+## Option 1 — GUI (Recommended)
+
+1. Download the project as a ZIP from GitHub.
+2. Extract the ZIP.
+3. Open the project in Android Studio.
+4. Add your own `google-services.json`.
+5. Configure Firebase Authentication and Firestore.
+6. Build and run the project.
+
+---
+
+## Option 2 — CLI
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/stacknerva/Arise-discipline-os.git
 ```
 
-Open the project in Android Studio.
+Navigate into the project:
 
-Add your own Firebase project:
+```bash
+cd Arise-discipline-os
+```
 
-- google-services.json
-- SHA-1
-- SHA-256
+Build the project:
 
-Build and run the application.
+```bash
+./gradlew assembleRelease
+```
+
+or
+
+```bash
+./gradlew assembleDebug
+```
 
 ---
 
-# Requirements
+## Firebase Setup
 
-- Android 8.0+
-- Google Play Services
-- Internet connection (for cloud sync)
+Before running the app:
 
+- Create a Firebase project.
+- Register your Android application.
+- Add SHA-1 and SHA-256 fingerprints.
+- Enable Google Authentication.
+- Enable Cloud Firestore.
+- Download `google-services.json`.
+- Place `google-services.json` in the `app/` module.
+
+---
+
+## Requirements
+
+- Android Studio (GUI workflow)
+- Git (CLI workflow)
+- JDK 17+
+- Android SDK
+- Gradle
+- Firebase project
+  
 ---
 
 # Permissions
