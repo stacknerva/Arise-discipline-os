@@ -4,15 +4,19 @@ import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ContentResolver
 import android.content.Context
+import com.example.R
 import android.content.Intent
+import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.util.Calendar
 
 class NotificationHelper(private val context: Context) {
-    private val channelId = "arise_reminders_channel_v2"
+    private val channelId = "arise_reminders_v3"
     
     init {
         createNotificationChannel()
@@ -20,36 +24,51 @@ class NotificationHelper(private val context: Context) {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Arise Reminders",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notifies you at the start of your routine tasks"
-                
-                val soundUri = android.net.Uri.parse("android.resource://${context.packageName}/raw/arise_notification_trimmed")
-                val audioAttributes = android.media.AudioAttributes.Builder()
-                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
-                    .build()
-                setSound(soundUri, audioAttributes)
+            val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.arise_notification}")
+            Log.d("NotificationHelper", "Creating notification channel '$channelId' with sound URI: $soundUri")
+
+            try {
+                val channel = NotificationChannel(
+                    channelId,
+                    "Arise Reminders",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifies you at the start of your routine tasks"
+                    
+                    val audioAttributes = AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .build()
+                    setSound(soundUri, audioAttributes)
+                }
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.createNotificationChannel(channel)
+                Log.d("NotificationHelper", "Notification channel '$channelId' created successfully")
+            } catch (e: Exception) {
+                Log.e("NotificationHelper", "Exception while creating notification channel", e)
             }
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
         }
     }
 
     fun showNotification(title: String, content: String, notificationId: Int = System.currentTimeMillis().toInt()) {
+        val soundUri = Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.arise_notification}")
+        Log.d("NotificationHelper", "Showing notification with channel ID: $channelId, Sound URI: $soundUri")
+
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setSound(android.net.Uri.parse("android.resource://${context.packageName}/raw/arise_notification_trimmed"))
-        
-        notificationManager.notify(notificationId, builder.build())
+        try {
+            val builder = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(content)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setSound(soundUri)
+            
+            notificationManager.notify(notificationId, builder.build())
+            Log.d("NotificationHelper", "Notification shown successfully")
+        } catch (e: Exception) {
+            Log.e("NotificationHelper", "Exception while showing notification", e)
+        }
     }
 
     fun scheduleTestReminder() {

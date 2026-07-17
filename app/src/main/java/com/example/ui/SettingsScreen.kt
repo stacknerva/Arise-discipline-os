@@ -61,6 +61,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.rotate
@@ -194,14 +195,7 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
             Text("ACCOUNT", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 16.dp))
             AccountSection(
                 account = currentUser,
-                onSignIn = { doGoogleSignIn() },
-                onSignOut = { 
-                    googleSignInClient.signOut().addOnCompleteListener {
-                        FirebaseAuth.getInstance().signOut()
-                        currentUser = null
-                        viewModel.handleSignOut()
-                    }
-                }
+                onSignIn = { doGoogleSignIn() }
             )
             Spacer(modifier = Modifier.height(32.dp))
             
@@ -274,7 +268,43 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
                 }
             })
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            if (currentUser != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { 
+                            googleSignInClient.signOut().addOnCompleteListener {
+                                FirebaseAuth.getInstance().signOut()
+                                currentUser = null
+                                viewModel.handleSignOut()
+                            }
+                        },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Sign Out",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = "Sign Out",
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
     }
 
@@ -448,7 +478,7 @@ fun AddRoutineDialog(template: RoutineTemplateEntity?, onDismiss: () -> Unit, on
 
 @Suppress("DEPRECATION")
 @Composable
-fun AccountSection(account: com.google.firebase.auth.FirebaseUser?, onSignIn: () -> Unit, onSignOut: () -> Unit) {
+fun AccountSection(account: com.google.firebase.auth.FirebaseUser?, onSignIn: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -457,29 +487,17 @@ fun AccountSection(account: com.google.firebase.auth.FirebaseUser?, onSignIn: ()
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             if (account == null) {
-                // Guest State
-                Surface(
-                    modifier = Modifier.size(64.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("G", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
                 Text("Guest", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     "Sign in with Google to securely sync your Arise data across devices.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onSignIn,
                     modifier = Modifier.fillMaxWidth()
@@ -487,15 +505,6 @@ fun AccountSection(account: com.google.firebase.auth.FirebaseUser?, onSignIn: ()
                     Text("Continue with Google")
                 }
             } else {
-                // Signed In State
-                AsyncImage(
-                    model = account.photoUrl,
-                    contentDescription = "Profile Picture",
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
                 Text(account.displayName ?: "User", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -503,8 +512,6 @@ fun AccountSection(account: com.google.firebase.auth.FirebaseUser?, onSignIn: ()
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                ListItemAction("Sign Out", onClick = onSignOut)
             }
         }
     }
