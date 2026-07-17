@@ -3,10 +3,38 @@ import re
 with open("app/src/main/java/com/example/ui/SettingsScreen.kt", "r") as f:
     content = f.read()
 
-# using regex
-pattern = r"    val doGoogleSignIn = \{\s+coroutineScope\.launch \{\s+try \{\s+val hashedNonce.*?\} catch \(e: Exception\) \{.*?signInError = \"Exception: \$\{e\.message\}\"\s+\}\s+\}\s+\}"
+# Let's find the start of `val doGoogleSignIn = {` and the end of the block.
+# We know it's inside `fun SettingsScreen(...)`.
+# Instead of regex, let's just find the index of `val doGoogleSignIn = {`
+# and find the matching closing brace.
 
-fixed = """    val doGoogleSignIn = {
+start_idx = content.find("val doGoogleSignIn = {")
+if start_idx == -1:
+    print("Could not find doGoogleSignIn")
+    exit(1)
+
+brace_count = 0
+end_idx = -1
+in_block = False
+
+for i in range(start_idx, len(content)):
+    if content[i] == '{':
+        brace_count += 1
+        in_block = True
+    elif content[i] == '}':
+        brace_count -= 1
+        
+    if in_block and brace_count == 0:
+        end_idx = i
+        break
+
+if end_idx == -1:
+    print("Could not find end of doGoogleSignIn")
+    exit(1)
+
+original = content[start_idx:end_idx+1]
+
+fixed = """val doGoogleSignIn = {
         coroutineScope.launch {
             try {
                 val webClientId = context.getString(R.string.default_web_client_id)
@@ -18,6 +46,7 @@ fixed = """    val doGoogleSignIn = {
                     .setFilterByAuthorizedAccounts(false)
                     .setServerClientId(webClientId)
                     .setNonce(hashedNonce)
+                    .setAutoSelectEnabled(false)
                     .build()
                     
                 android.util.Log.d("SettingsScreen", "Building GetCredentialRequest...")
@@ -46,8 +75,9 @@ fixed = """    val doGoogleSignIn = {
                             viewModel.handleSignIn(context)
                             signInError = null
                         } else {
-                            android.util.Log.e("SettingsScreen", "Firebase auth failed", authTask.exception)
-                            signInError = "Firebase auth failed: ${authTask.exception?.message}"
+                            val msg = "Firebase auth failed: ${authTask.exception?.message}"
+                            android.util.Log.e("SettingsScreen", msg, authTask.exception)
+                            signInError = msg
                         }
                     }
                 } else {
@@ -55,21 +85,21 @@ fixed = """    val doGoogleSignIn = {
                     signInError = "Unexpected credential type"
                 }
             } catch (e: GetCredentialException) {
-                android.util.Log.e("SettingsScreen", "GetCredentialException: type=${e.type}, msg=${e.errorMessage}", e)
-                signInError = "GetCredentialException: ${e.type}\\n${e.errorMessage}\\n${e.message}"
+                val msg = "GetCredentialException: type=${e.type}, msg=${e.errorMessage}\\n${e.message}"
+                android.util.Log.e("SettingsScreen", msg, e)
+                signInError = msg
             } catch (e: Exception) {
-                android.util.Log.e("SettingsScreen", "Exception during sign in", e)
-                signInError = "Exception: ${e.message}"
+                val msg = "Exception during sign in: ${e.message}"
+                android.util.Log.e("SettingsScreen", msg, e)
+                signInError = msg
             }
         }
     }"""
 
-match = re.search(pattern, content, re.DOTALL)
-if match:
-    content = content[:match.start()] + fixed + content[match.end():]
-    with open("app/src/main/java/com/example/ui/SettingsScreen.kt", "w") as f:
-        f.write(content)
-    print("Replaced!")
-else:
-    print("Match not found")
+content = content[:start_idx] + fixed + content[end_idx+1:]
+
+with open("app/src/main/java/com/example/ui/SettingsScreen.kt", "w") as f:
+    f.write(content)
+
+print("Replaced successfully")
 

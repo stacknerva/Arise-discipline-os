@@ -99,45 +99,61 @@ fun SettingsScreen(viewModel: DisciplineViewModel) {
     val doGoogleSignIn = {
         coroutineScope.launch {
             try {
+                val webClientId = context.getString(R.string.default_web_client_id)
+                android.util.Log.d("SettingsScreen", "Starting Google Sign-In with Web Client ID: $webClientId")
+                
                 val hashedNonce = UUID.randomUUID().toString()
+                android.util.Log.d("SettingsScreen", "Building GetGoogleIdOption...")
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(context.getString(R.string.default_web_client_id))
+                    .setServerClientId(webClientId)
                     .setNonce(hashedNonce)
+                    .setAutoSelectEnabled(false)
                     .build()
-
+                    
+                android.util.Log.d("SettingsScreen", "Building GetCredentialRequest...")
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(googleIdOption)
                     .build()
-
+                    
+                android.util.Log.d("SettingsScreen", "Calling credentialManager.getCredential()...")
                 val result = credentialManager.getCredential(
                     request = request,
                     context = context,
                 )
                 
+                android.util.Log.d("SettingsScreen", "Received result, parsing credential...")
                 val credential = result.credential
                 if (credential is androidx.credentials.CustomCredential && credential.type == com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                    android.util.Log.d("SettingsScreen", "Creating GoogleIdTokenCredential from data...")
                     val googleIdTokenCredential = com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.createFrom(credential.data)
+                    
+                    android.util.Log.d("SettingsScreen", "Authenticating with Firebase...")
                     val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
                     FirebaseAuth.getInstance().signInWithCredential(firebaseCredential).addOnCompleteListener { authTask ->
                         if (authTask.isSuccessful) {
+                            android.util.Log.d("SettingsScreen", "Firebase Auth successful.")
                             currentUser = FirebaseAuth.getInstance().currentUser
                             viewModel.handleSignIn(context)
+                            signInError = null
                         } else {
-                            signInError = "Firebase auth failed: ${authTask.exception?.message}"
+                            val msg = "Firebase auth failed: ${authTask.exception?.message}"
+                            android.util.Log.e("SettingsScreen", msg, authTask.exception)
+                            signInError = msg
                         }
                     }
                 } else {
+                    android.util.Log.e("SettingsScreen", "Unexpected credential type: ${credential.type}")
                     signInError = "Unexpected credential type"
                 }
             } catch (e: GetCredentialException) {
-                if (e.type.contains("TYPE_NO_CREDENTIAL", ignoreCase = true) || e.errorMessage?.toString()?.contains("no credentials", ignoreCase = true) == true) {
-                    signInError = "No Google account found on this device. Please add a Google account in the device Settings and try again."
-                } else {
-                    signInError = "GetCredentialException: ${e.type} - ${e.errorMessage}"
-                }
+                val msg = "GetCredentialException: type=${e.type}, msg=${e.errorMessage}\n${e.message}"
+                android.util.Log.e("SettingsScreen", msg, e)
+                signInError = msg
             } catch (e: Exception) {
-                signInError = "Exception: ${e.message}"
+                val msg = "Exception during sign in: ${e.message}"
+                android.util.Log.e("SettingsScreen", msg, e)
+                signInError = msg
             }
         }
     }
