@@ -183,13 +183,25 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun scheduleAlarmsForTasks(tasks: List<DailyTaskEntity>, templates: List<RoutineTemplateEntity>) {
+    fun cancelAlarm(id: Int) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            id,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+        pendingIntent.cancel()
+    }
+
+    fun scheduleAllAlarms(templates: List<RoutineTemplateEntity>) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val now = Calendar.getInstance()
         
-        for (task in tasks) {
-            val template = templates.find { it.id == task.templateId } ?: continue
-            val parts = task.startTimeStr.split(":")
+        for (template in templates) {
+            val parts = template.startTimeStr.split(":")
             if (parts.size != 2) continue
             val hour = parts[0].toIntOrNull() ?: continue
             val minute = parts[1].toIntOrNull() ?: continue
@@ -209,15 +221,15 @@ class NotificationHelper(private val context: Context) {
             }
             
             val intent = Intent(context, AlarmReceiver::class.java).apply {
-                putExtra("TASK_TITLE", task.title)
-                putExtra("TASK_TIME", task.startTimeStr)
+                putExtra("TASK_TITLE", template.title)
+                putExtra("TASK_TIME", template.startTimeStr)
                 putExtra("OFFSET", template.notificationOffsetMins)
                 putExtra("IS_REPORT", false)
             }
             
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
-                task.id,
+                template.id,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
@@ -249,29 +261,59 @@ class NotificationHelper(private val context: Context) {
             reportCalendar.add(Calendar.DAY_OF_YEAR, 1)
         }
         
-        if (true) {
-            val reportIntent = Intent(context, AlarmReceiver::class.java).apply {
-                putExtra("IS_REPORT", true)
-            }
-            val reportPendingIntent = PendingIntent.getBroadcast(
-                context,
-                99999, // Unique ID
-                reportIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (alarmManager.canScheduleExactAlarms()) {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reportCalendar.timeInMillis, reportPendingIntent)
-                    } else {
-                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reportCalendar.timeInMillis, reportPendingIntent)
-                    }
-                } else {
+        val reportIntent = Intent(context, AlarmReceiver::class.java).apply {
+            putExtra("IS_REPORT", true)
+        }
+        val reportPendingIntent = PendingIntent.getBroadcast(
+            context,
+            99999, // Unique ID
+            reportIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reportCalendar.timeInMillis, reportPendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reportCalendar.timeInMillis, reportPendingIntent)
                 }
-            } catch (e: SecurityException) {
-                Log.e("NotificationHelper", "Permission to schedule report alarm denied", e)
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reportCalendar.timeInMillis, reportPendingIntent)
             }
+        } catch (e: SecurityException) {
+            Log.e("NotificationHelper", "Permission to schedule report alarm denied", e)
+        }
+        
+        // Schedule a midnight Reschedule alarm to set up alarms for the next day
+        val midnightCalendar = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 1)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        
+        val midnightIntent = Intent(context, AlarmReceiver::class.java).apply {
+            putExtra("IS_MIDNIGHT_RESCHEDULE", true)
+        }
+        val midnightPendingIntent = PendingIntent.getBroadcast(
+            context,
+            99998, // Unique ID
+            midnightIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, midnightCalendar.timeInMillis, midnightPendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, midnightCalendar.timeInMillis, midnightPendingIntent)
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, midnightCalendar.timeInMillis, midnightPendingIntent)
+            }
+        } catch (e: SecurityException) {
+            Log.e("NotificationHelper", "Permission to schedule midnight alarm denied", e)
         }
     }
 }

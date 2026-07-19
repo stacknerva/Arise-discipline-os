@@ -26,6 +26,8 @@ class DisciplineRepository(private val db: AppDatabase) {
     suspend fun getAllTemplatesSync() = db.routineDao().getAllTemplatesSync()
     suspend fun deleteAllTemplates() = db.routineDao().deleteAllTemplates()
     
+    suspend fun getTasksForDateSync(date: String) = db.dailyTaskDao().getTasksForDateSync(date)
+    
     suspend fun getAllTasksSync() = db.dailyTaskDao().getAllTasksSync()
     suspend fun deleteAllTasks() = db.dailyTaskDao().deleteAllTasks()
     

@@ -256,10 +256,8 @@ class DisciplineViewModel(
         }
         
         viewModelScope.launch {
-            combine(todayTasks, allTemplates) { tasks, templates ->
-                Pair(tasks, templates)
-            }.collect { (tasks, templates) ->
-                notificationHelper.scheduleAlarmsForTasks(tasks, templates)
+            allTemplates.collect { templates ->
+                notificationHelper.scheduleAllAlarms(templates)
             }
         }
     }
@@ -464,6 +462,7 @@ class DisciplineViewModel(
             repository.deleteTemplate(id)
             repository.deleteTasksForDate(_currentDate.value)
             checkAndInitializeDay(_currentDate.value)
+            notificationHelper.cancelAlarm(id)
             triggerCloudSync()
         }
     }

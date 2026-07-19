@@ -11,7 +11,17 @@ import kotlinx.coroutines.runBlocking
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+        val helper = NotificationHelper(context)
+        val app = context.applicationContext as? DisciplineApplication
+        val repository = app?.repository
+        
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.getBooleanExtra("IS_MIDNIGHT_RESCHEDULE", false)) {
+            if (repository != null) {
+                runBlocking {
+                    val templates = repository.getAllTemplatesSync()
+                    helper.scheduleAllAlarms(templates)
+                }
+            }
             return
         }
         
@@ -19,20 +29,24 @@ class AlarmReceiver : BroadcastReceiver() {
         if (!isTest) {
             val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val dateStr = format.format(Date())
-            val app = context.applicationContext as? DisciplineApplication
-            val repository = app?.repository
             val report = if (repository != null) {
                 runBlocking { repository.getReportForDate(dateStr) }
             } else null
             
             if (report?.isSkipped == true) {
                 // Today is skipped, do not trigger any notifications/reminders
+                // But still reschedule alarms for tomorrow
+                if (repository != null) {
+                    runBlocking {
+                        val templates = repository.getAllTemplatesSync()
+                        helper.scheduleAllAlarms(templates)
+                    }
+                }
                 return
             }
         }
         
         val isReport = intent.getBooleanExtra("IS_REPORT", false)
-        val helper = NotificationHelper(context)
         
         if (isTest) {
             helper.showNotification("Test Reminder", "Your notifications are working perfectly! You're all set.")
@@ -41,13 +55,20 @@ class AlarmReceiver : BroadcastReceiver() {
         
         if (isReport) {
             helper.showNotification("Daily Report", "Daily Report is now available.")
-            return
+        } else {
+            val title = intent.getStringExtra("TASK_TITLE") ?: "Task"
+            val offset = intent.getIntExtra("OFFSET", 5)
+            
+            val msg = if (offset > 0) "Starts in $offset minutes." else "Starts now."
+            helper.showNotification(title, msg)
         }
         
-        val title = intent.getStringExtra("TASK_TITLE") ?: "Task"
-        val offset = intent.getIntExtra("OFFSET", 5)
-        
-        val msg = if (offset > 0) "Starts in $offset minutes." else "Starts now."
-        helper.showNotification(title, msg)
+        // Reschedule alarms for the next occurrence
+        if (repository != null) {
+            runBlocking {
+                val templates = repository.getAllTemplatesSync()
+                helper.scheduleAllAlarms(templates)
+            }
+        }
     }
 }

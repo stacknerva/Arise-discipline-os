@@ -42,6 +42,9 @@ interface DailyTaskDao {
     @Query("DELETE FROM daily_tasks WHERE date = :date")
     suspend fun deleteTasksForDate(date: String)
 
+    @Query("SELECT * FROM daily_tasks WHERE date = :date")
+    suspend fun getTasksForDateSync(date: String): List<DailyTaskEntity>
+
     @Query("SELECT * FROM daily_tasks")
     suspend fun getAllTasksSync(): List<DailyTaskEntity>
 
