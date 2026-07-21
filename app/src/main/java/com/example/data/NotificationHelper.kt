@@ -17,11 +17,14 @@ import androidx.core.app.NotificationCompat
 import java.util.Calendar
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class NotificationHelper(private val context: Context) {
     
     init {
-        createNotificationChannel()
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            createNotificationChannel()
+        }
     }
 
     private fun getActiveChannelId(mode: String, uriStr: String?): String {
@@ -32,21 +35,19 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    private fun getSoundSettings(): Pair<String, String?> {
+    private suspend fun getSoundSettings(): Pair<String, String?> {
         return try {
-            runBlocking {
-                val repository = SettingsRepository(context)
-                val mode = repository.notificationSoundMode.first()
-                val uri = repository.notificationSoundUri.first()
-                Pair(mode, uri)
-            }
+            val repository = SettingsRepository(context)
+            val mode = repository.notificationSoundMode.first()
+            val uri = repository.notificationSoundUri.first()
+            Pair(mode, uri)
         } catch (e: Exception) {
             Log.e("NotificationHelper", "Failed to load sound settings, falling back to default", e)
             Pair("default", null)
         }
     }
 
-    private fun createNotificationChannel() {
+    private suspend fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val (mode, uriStr) = getSoundSettings()
             createChannelForMode(mode, uriStr)
@@ -109,14 +110,13 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showNotification(title: String, content: String, notificationId: Int = java.util.UUID.randomUUID().hashCode()) {
+    suspend fun showNotification(title: String, content: String, notificationId: Int = java.util.UUID.randomUUID().hashCode()) {
         val (mode, uriStr) = getSoundSettings()
         val activeChannelId = getActiveChannelId(mode, uriStr)
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createChannelForMode(mode, uriStr)
         }
-
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         try {
             val builder = NotificationCompat.Builder(context, activeChannelId)
