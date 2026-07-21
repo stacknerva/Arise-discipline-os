@@ -1,26 +1,9 @@
-package com.example.data
+import re
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import com.example.DisciplineApplication
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+with open("app/src/main/java/com/example/data/AlarmReceiver.kt", "r") as f:
+    content = f.read()
 
-class AlarmReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        val pendingResult = goAsync()
-        val helper = NotificationHelper(context)
-        val app = context.applicationContext as? DisciplineApplication
-        val repository = app?.repository
-        
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-
+replacement = """
                 if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.getBooleanExtra("IS_MIDNIGHT_RESCHEDULE", false)) {
                     if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
                         android.util.Log.d("AlarmReceiver", "BOOT_COMPLETED received")
@@ -77,10 +60,25 @@ class AlarmReceiver : BroadcastReceiver() {
                         if (startTimeStr == null) android.util.Log.e("AlarmReceiver", "missing TASK_TIME")
                     }
                 }
+"""
 
-            } finally {
-                pendingResult.finish()
-            }
-        }
-    }
-}
+start_str = '                if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.getBooleanExtra("IS_MIDNIGHT_RESCHEDULE", false)) {'
+end_str = '                // Reschedule alarms for the next occurrence'
+
+idx_start = content.find(start_str)
+idx_end = content.find(end_str)
+
+if idx_start != -1 and idx_end != -1:
+    content = content[:idx_start] + replacement + content[idx_end:]
+
+# Now remove the final scheduleAllAlarms block
+final_block = """                // Reschedule alarms for the next occurrence
+                if (repository != null) {
+                    val templates = repository.getAllTemplatesSync()
+                    helper.scheduleAllAlarms(templates)
+                }"""
+
+content = content.replace(final_block, "")
+
+with open("app/src/main/java/com/example/data/AlarmReceiver.kt", "w") as f:
+    f.write(content)
